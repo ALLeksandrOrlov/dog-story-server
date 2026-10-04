@@ -1,0 +1,1728 @@
+{
+  "manual": [
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "63"
+      },
+      "body": [
+        {
+          "id": "square",
+          "name": "Square"
+        },
+        {
+          "id": "other",
+          "name": "Other"
+        }
+      ]
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET",
+        "Cache-Control": "no-cache",
+        "Content-Length": "14"
+      },
+      "body": "Invalid method"
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET",
+        "Cache-Control": "no-cache",
+        "Content-Length": "14"
+      },
+      "body": "Invalid method"
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET",
+        "Cache-Control": "no-cache",
+        "Content-Length": "14"
+      },
+      "body": "Invalid method"
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET",
+        "Cache-Control": "no-cache",
+        "Content-Length": "14"
+      },
+      "body": "Invalid method"
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "252"
+      },
+      "body": {
+        "id": "square",
+        "name": "Square",
+        "roads": [
+          {
+            "x0": 0,
+            "y0": 0,
+            "x1": 10
+          },
+          {
+            "x0": 10,
+            "y0": 0,
+            "y1": 10
+          }
+        ],
+        "buildings": [
+          {
+            "x": 2,
+            "y": 2,
+            "w": 2,
+            "h": 2
+          }
+        ],
+        "offices": [
+          {
+            "id": "depot",
+            "x": 10,
+            "y": 0,
+            "offsetX": 0,
+            "offsetY": 1
+          }
+        ],
+        "lootTypes": [
+          {
+            "name": "Parcel",
+            "value": 10,
+            "color": "#fa0"
+          }
+        ]
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "252"
+      },
+      "body": {
+        "id": "square",
+        "name": "Square",
+        "roads": [
+          {
+            "x0": 0,
+            "y0": 0,
+            "x1": 10
+          },
+          {
+            "x0": 10,
+            "y0": 0,
+            "y1": 10
+          }
+        ],
+        "buildings": [
+          {
+            "x": 2,
+            "y": 2,
+            "w": 2,
+            "h": 2
+          }
+        ],
+        "offices": [
+          {
+            "id": "depot",
+            "x": 10,
+            "y": 0,
+            "offsetX": 0,
+            "offsetY": 1
+          }
+        ],
+        "lootTypes": [
+          {
+            "name": "Parcel",
+            "value": 10,
+            "color": "#fa0"
+          }
+        ]
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 404,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "48"
+      },
+      "body": {
+        "code": "mapNotFound",
+        "message": "Map not found"
+      }
+    },
+    {
+      "status": 404,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "48"
+      },
+      "body": {
+        "code": "mapNotFound",
+        "message": "Map not found"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "65"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Only POST method is expected"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "65"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Only POST method is expected"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "68"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Join game request parse error"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "65"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Only POST method is expected"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "65"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Only POST method is expected"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is missing"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is missing"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "68"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is required"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "68"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is required"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "56"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Invalid content type"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "56"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Invalid content type"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": []
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 405,
+      "headers": {
+        "Content-Type": "application/json",
+        "Allow": "GET, HEAD",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidMethod",
+        "message": "Invalid method"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "45"
+      },
+      "body": {
+        "code": "badRequest",
+        "message": "Bad request"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "45"
+      },
+      "body": {
+        "code": "badRequest",
+        "message": "Bad request"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "45"
+      },
+      "body": {
+        "code": "badRequest",
+        "message": "Bad request"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "45"
+      },
+      "body": {
+        "code": "badRequest",
+        "message": "Bad request"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "45"
+      },
+      "body": {
+        "code": "badRequest",
+        "message": "Bad request"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "68"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Join game request parse error"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "68"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Join game request parse error"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "68"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Join game request parse error"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "51"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Invalid name"
+      }
+    },
+    {
+      "status": 404,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "48"
+      },
+      "body": {
+        "code": "mapNotFound",
+        "message": "Map not found"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "61"
+      },
+      "body": {
+        "authToken": "@0",
+        "playerId": 0
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "61"
+      },
+      "body": {
+        "authToken": "@1",
+        "playerId": 1
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "61"
+      },
+      "body": {
+        "authToken": "@2",
+        "playerId": 2
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "44"
+      },
+      "body": {
+        "0": {
+          "name": "Alice"
+        },
+        "1": {
+          "name": "Боб"
+        }
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "22"
+      },
+      "body": {
+        "2": {
+          "name": "Other"
+        }
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "unknownToken",
+        "message": "Player token has not been found"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is missing"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is missing"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "44"
+      },
+      "body": {
+        "0": {
+          "name": "Alice"
+        },
+        "1": {
+          "name": "Боб"
+        }
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is missing"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "168"
+      },
+      "body": {
+        "players": {
+          "0": {
+            "pos": [
+              0.0,
+              0.0
+            ],
+            "speed": [
+              0.0,
+              0.0
+            ],
+            "dir": "U",
+            "bag": [],
+            "score": 0
+          },
+          "1": {
+            "pos": [
+              0.0,
+              0.0
+            ],
+            "speed": [
+              0.0,
+              0.0
+            ],
+            "dir": "U",
+            "bag": [],
+            "score": 0
+          }
+        },
+        "lostObjects": {}
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "99"
+      },
+      "body": {
+        "players": {
+          "2": {
+            "pos": [
+              0.0,
+              0.0
+            ],
+            "speed": [
+              0.0,
+              0.0
+            ],
+            "dir": "U",
+            "bag": [],
+            "score": 0
+          }
+        },
+        "lostObjects": {}
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "unknownToken",
+        "message": "Player token has not been found"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "68"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is required"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "68"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is required"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "168"
+      },
+      "body": {
+        "players": {
+          "0": {
+            "pos": [
+              0.0,
+              0.0
+            ],
+            "speed": [
+              0.0,
+              0.0
+            ],
+            "dir": "U",
+            "bag": [],
+            "score": 0
+          },
+          "1": {
+            "pos": [
+              0.0,
+              0.0
+            ],
+            "speed": [
+              0.0,
+              0.0
+            ],
+            "dir": "U",
+            "bag": [],
+            "score": 0
+          }
+        },
+        "lostObjects": {}
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "68"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Authorization header is required"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "61"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Failed to parse action"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "61"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Failed to parse action"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "61"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Failed to parse action"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "61"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Failed to parse action"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "unknownToken",
+        "message": "Player token has not been found"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "56"
+      },
+      "body": {
+        "code": "invalidToken",
+        "message": "Invalid content type"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "72"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Failed to parse tick request JSON"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "72"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Failed to parse tick request JSON"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "72"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Failed to parse tick request JSON"
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "72"
+      },
+      "body": {
+        "code": "invalidArgument",
+        "message": "Failed to parse tick request JSON"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "168"
+      },
+      "body": {
+        "players": {
+          "0": {
+            "pos": [
+              2.0,
+              0.0
+            ],
+            "speed": [
+              2.0,
+              0.0
+            ],
+            "dir": "R",
+            "bag": [],
+            "score": 0
+          },
+          "1": {
+            "pos": [
+              0.0,
+              0.0
+            ],
+            "speed": [
+              0.0,
+              0.0
+            ],
+            "dir": "U",
+            "bag": [],
+            "score": 0
+          }
+        },
+        "lostObjects": {}
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "unknownToken",
+        "message": "Player token has not been found"
+      }
+    },
+    {
+      "status": 401,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "67"
+      },
+      "body": {
+        "code": "unknownToken",
+        "message": "Player token has not been found"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "99"
+      },
+      "body": {
+        "players": {
+          "1": {
+            "pos": [
+              0.0,
+              0.0
+            ],
+            "speed": [
+              0.0,
+              0.0
+            ],
+            "dir": "U",
+            "bag": [],
+            "score": 0
+          }
+        },
+        "lostObjects": {}
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "89"
+      },
+      "body": [
+        {
+          "name": "Alice",
+          "score": 0,
+          "playTime": 3.5
+        },
+        {
+          "name": "Other",
+          "score": 0,
+          "playTime": 3.5
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "45"
+      },
+      "body": [
+        {
+          "name": "Alice",
+          "score": 0,
+          "playTime": 3.5
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "45"
+      },
+      "body": [
+        {
+          "name": "Other",
+          "score": 0,
+          "playTime": 3.5
+        }
+      ]
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "45"
+      },
+      "body": {
+        "code": "badRequest",
+        "message": "Bad request"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": []
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "89"
+      },
+      "body": [
+        {
+          "name": "Alice",
+          "score": 0,
+          "playTime": 3.5
+        },
+        {
+          "name": "Other",
+          "score": 0,
+          "playTime": 3.5
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "89"
+      },
+      "body": [
+        {
+          "name": "Alice",
+          "score": 0,
+          "playTime": 3.5
+        },
+        {
+          "name": "Other",
+          "score": 0,
+          "playTime": 3.5
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "89"
+      },
+      "body": [
+        {
+          "name": "Alice",
+          "score": 0,
+          "playTime": 3.5
+        },
+        {
+          "name": "Other",
+          "score": 0,
+          "playTime": 3.5
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "63"
+      },
+      "body": [
+        {
+          "id": "square",
+          "name": "Square"
+        },
+        {
+          "id": "other",
+          "name": "Other"
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "252"
+      },
+      "body": {
+        "id": "square",
+        "name": "Square",
+        "roads": [
+          {
+            "x0": 0,
+            "y0": 0,
+            "x1": 10
+          },
+          {
+            "x0": 10,
+            "y0": 0,
+            "y1": 10
+          }
+        ],
+        "buildings": [
+          {
+            "x": 2,
+            "y": 2,
+            "w": 2,
+            "h": 2
+          }
+        ],
+        "offices": [
+          {
+            "id": "depot",
+            "x": 10,
+            "y": 0,
+            "offsetX": 0,
+            "offsetY": 1
+          }
+        ],
+        "lootTypes": [
+          {
+            "name": "Parcel",
+            "value": 10,
+            "color": "#fa0"
+          }
+        ]
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "45"
+      },
+      "body": {
+        "code": "badRequest",
+        "message": "Bad request"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "text/html",
+        "Content-Length": "65"
+      },
+      "fileSize": 65
+    },
+    {
+      "status": 404,
+      "headers": {
+        "Content-Type": "text/plain"
+      },
+      "body": ""
+    }
+  ],
+  "auto": [
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "61"
+      },
+      "body": {
+        "authToken": "@0",
+        "playerId": 0
+      }
+    },
+    {
+      "status": 400,
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "45"
+      },
+      "body": {
+        "code": "badRequest",
+        "message": "Bad request"
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {},
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "99"
+      },
+      "body": {
+        "players": {
+          "0": {
+            "pos": [
+              1.0,
+              0.0
+            ],
+            "speed": [
+              2.0,
+              0.0
+            ],
+            "dir": "R",
+            "bag": [],
+            "score": 0
+          }
+        },
+        "lostObjects": {}
+      }
+    }
+  ],
+  "snapshots": [
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "61"
+      },
+      "body": {
+        "authToken": "@0",
+        "playerId": 0
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "99"
+      },
+      "body": {
+        "players": {
+          "0": {
+            "pos": [
+              2.0,
+              0.0
+            ],
+            "speed": [
+              2.0,
+              0.0
+            ],
+            "dir": "R",
+            "bag": [],
+            "score": 0
+          }
+        },
+        "lostObjects": {}
+      }
+    },
+    {},
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "99"
+      },
+      "body": {
+        "players": {
+          "0": {
+            "pos": [
+              2.0,
+              0.0
+            ],
+            "speed": [
+              0.0,
+              0.0
+            ],
+            "dir": "R",
+            "bag": [],
+            "score": 0
+          }
+        },
+        "lostObjects": {}
+      }
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "2"
+      },
+      "body": {}
+    },
+    {
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Content-Length": "99"
+      },
+      "body": {
+        "players": {
+          "0": {
+            "pos": [
+              3.0,
+              0.0
+            ],
+            "speed": [
+              2.0,
+              0.0
+            ],
+            "dir": "R",
+            "bag": [],
+            "score": 0
+          }
+        },
+        "lostObjects": {}
+      }
+    }
+  ]
+}

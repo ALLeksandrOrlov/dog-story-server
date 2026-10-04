@@ -1,0 +1,254 @@
+{
+  "baseline_sha256": "f89ce0ad7b94926ed4b791a89a78bbee4b3933b8094c7cef9e4877cfc45b15e4",
+  "reason": "Retire only idle players: Alice keeps moving, Bob and Other retire. Preserve and check every original response not affected by this fix.",
+  "corrections": [
+    {
+      "mode": "manual",
+      "index": 91,
+      "request": {
+        "method": "GET",
+        "target": "/api/v1/game/state",
+        "headers": {
+          "Authorization": "Bearer @0"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "Content-Length": "99"
+        },
+        "body": {
+          "players": {
+            "0": {
+              "pos": [
+                7.0,
+                0.0
+              ],
+              "speed": [
+                2.0,
+                0.0
+              ],
+              "dir": "R",
+              "bag": [],
+              "score": 0
+            }
+          },
+          "lostObjects": {}
+        }
+      }
+    },
+    {
+      "mode": "manual",
+      "index": 92,
+      "request": {
+        "method": "GET",
+        "target": "/api/v1/game/players",
+        "headers": {
+          "Authorization": "Bearer @0"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "Content-Length": "22"
+        },
+        "body": {
+          "0": {
+            "name": "Alice"
+          }
+        }
+      }
+    },
+    {
+      "mode": "manual",
+      "index": 93,
+      "request": {
+        "method": "GET",
+        "target": "/api/v1/game/state",
+        "headers": {
+          "Authorization": "Bearer @1"
+        }
+      },
+      "expected": {
+        "status": 401,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "Content-Length": "67"
+        },
+        "body": {
+          "code": "unknownToken",
+          "message": "Player token has not been found"
+        }
+      }
+    },
+    {
+      "mode": "manual",
+      "index": 94,
+      "request": {
+        "method": "GET",
+        "target": "/api/v1/game/records",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "Content-Length": "90"
+        },
+        "body": [
+          {
+            "name": "Other",
+            "score": 0,
+            "playTime": 3.5
+          },
+          {
+            "name": "Боб",
+            "score": 0,
+            "playTime": 3.5
+          }
+        ]
+      }
+    },
+    {
+      "mode": "manual",
+      "index": 95,
+      "request": {
+        "method": "GET",
+        "target": "/api/v1/game/records?start=0&maxItems=1",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "Content-Length": "45"
+        },
+        "body": [
+          {
+            "name": "Other",
+            "score": 0,
+            "playTime": 3.5
+          }
+        ]
+      }
+    },
+    {
+      "mode": "manual",
+      "index": 96,
+      "request": {
+        "method": "GET",
+        "target": "/api/v1/game/records?start=1&maxItems=100",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "Content-Length": "46"
+        },
+        "body": [
+          {
+            "name": "Боб",
+            "score": 0,
+            "playTime": 3.5
+          }
+        ]
+      }
+    },
+    {
+      "mode": "manual",
+      "index": 99,
+      "request": {
+        "method": "GET",
+        "target": "/api/v1/game/records?start=nonsense&maxItems=abc",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "Content-Length": "90"
+        },
+        "body": [
+          {
+            "name": "Other",
+            "score": 0,
+            "playTime": 3.5
+          },
+          {
+            "name": "Боб",
+            "score": 0,
+            "playTime": 3.5
+          }
+        ]
+      }
+    },
+    {
+      "mode": "manual",
+      "index": 100,
+      "request": {
+        "method": "GET",
+        "target": "/api/v1/game/records?maxItems=2suffix",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "Content-Length": "90"
+        },
+        "body": [
+          {
+            "name": "Other",
+            "score": 0,
+            "playTime": 3.5
+          },
+          {
+            "name": "Боб",
+            "score": 0,
+            "playTime": 3.5
+          }
+        ]
+      }
+    },
+    {
+      "mode": "manual",
+      "index": 101,
+      "request": {
+        "method": "GET",
+        "target": "/api/v1/game/records?ignored=1",
+        "headers": {}
+      },
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "Content-Length": "90"
+        },
+        "body": [
+          {
+            "name": "Other",
+            "score": 0,
+            "playTime": 3.5
+          },
+          {
+            "name": "Боб",
+            "score": 0,
+            "playTime": 3.5
+          }
+        ]
+      }
+    }
+  ]
+}

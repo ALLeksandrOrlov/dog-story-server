@@ -1,0 +1,11 @@
+.git
+build
+.cache
+.venv
+.env
+*.state
+*.state.tmp
+CMakeUserPresets.json
+__pycache__
+*.py[cod]
+.DS_Store
