@@ -8,11 +8,11 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #else
-#include "application/app.h"
-#include "controller/request_handler.h"
-#include "infrastructure/config/json_loader.h"
-#include "infrastructure/persistence/state_store.h"
-#include "view/json_view.h"
+#include "application/app.hpp"
+#include "controller/request_handler.hpp"
+#include "infrastructure/config/json_loader.hpp"
+#include "infrastructure/persistence/state_store.hpp"
+#include "view/json_view.hpp"
 #endif
 #include "memory_repository.h"
 #include <boost/json.hpp>
@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
         return std::make_unique<app::Application>(game, players, mode, false, std::function<void(int)>{},
                                                   repository);
     };
-    view::JsonView view(*loader.GetConfig());
+    view::JsonView view(loader.GetConfiguration());
 #endif
     auto application = make_application();
     boost::asio::io_context context;

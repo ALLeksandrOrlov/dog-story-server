@@ -11,14 +11,13 @@ Transitive build dependencies include zlib (zlib license) and bzip2 (bzip2 licen
 Full license notices are included in third_party/licenses and in the runtime image.
 Their license and copyright notices remain applicable. Backend dependency source code is not vendored into this repository.
 
-The original Dog Story client design, game scripts and map configuration are
-retained from the source snapshot. HTML jQuery references now use a local copy
-of the same official jQuery 3.6.0 release (MIT; license in third_party/licenses/jquery.txt).
-The key.obj and wallet.obj models are restored unchanged from the adjacent original
-asset directory in the same source snapshot. The static directory includes third-party
-JavaScript libraries and a model asset; their existing notices remain intact.
-The HTML also references external fonts and icons. Restoring these
-files does not grant additional rights to redistribute or relicense them.
+The Dog Story client design, game scripts, map configuration and the key.obj and
+wallet.obj models originate from the source snapshot and its asset directory.
+The client uses a local copy of the official jQuery 3.6.0 release
+(MIT; license in third_party/licenses/jquery.txt). The static directory includes
+third-party JavaScript libraries and model assets; their existing notices remain intact.
+The HTML also references external fonts and icons. Inclusion of these files does
+not grant additional rights to redistribute or relicense them.
 
 This repository does not grant a blanket open-source license for all source files.
 Public visibility is not a substitute for permission to redistribute or relicense

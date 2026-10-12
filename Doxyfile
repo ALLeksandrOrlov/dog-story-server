@@ -1,0 +1,37 @@
+# Run from the repository root: doxygen Doxyfile
+PROJECT_NAME           = "Dog Story Server"
+PROJECT_BRIEF          = "C++-сервер многопользовательской игры"
+OUTPUT_DIRECTORY       = build/docs
+OUTPUT_LANGUAGE        = Russian
+DOXYFILE_ENCODING      = UTF-8
+INPUT_ENCODING         = UTF-8
+INPUT                  = src
+RECURSIVE              = YES
+FILE_PATTERNS          = *.hpp *.cpp
+# EXTRACT_ALL would suppress WARN_IF_UNDOCUMENTED. Keep it disabled so missing
+# class/function comments are reported, including private and local members.
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_ANON_NSPACES    = YES
+HIDE_UNDOC_MEMBERS      = NO
+HIDE_UNDOC_CLASSES      = NO
+JAVADOC_AUTOBRIEF       = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
+WARN_LOGFILE           =
+QUIET                  = YES
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_FROM_PATH        = .
+FULL_PATH_NAMES        = YES
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = NO
+HAVE_DOT               = NO

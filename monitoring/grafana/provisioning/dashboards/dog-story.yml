@@ -1,0 +1,11 @@
+apiVersion: 1
+providers:
+  - name: Dog Story
+    orgId: 1
+    folder: Dog Story
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/dashboards

@@ -1,209 +1,231 @@
 #include <cmath>
+#include <cstdint>
+#include <fstream>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 
-#include "infrastructure/config/json_loader.h"
-#include <fstream>
+#include "infrastructure/config/json_loader.hpp"
 
-using namespace std;
-
-namespace json_loader {
-
+namespace json_loader
+{
 namespace json = boost::json;
-namespace {
-double Number(const json::value& value) {
+namespace
+{
+/** @brief Коэффициент перевода секунд конфигурации в миллисекунды модели. */
+constexpr double milliseconds_per_second = 1000.0;
+/** @brief Коэффициент перевода секунд конфигурации в миллисекунды модели. */
+constexpr double minimum_period_seconds = 1.0 / milliseconds_per_second;
+
+/** @brief Читает конечное число JSON независимо от целочисленной или вещественной записи. */
+double ReadNumber(const json::value& value)
+{
     if (!value.is_number())
+    {
         throw std::invalid_argument("Expected a numeric setting");
-    double result = value.to_number<double>();
+    }
+    const double result = value.to_number<double>();
     if (!std::isfinite(result))
+    {
         throw std::invalid_argument("Expected a finite setting");
+    }
     return result;
 }
-int Milliseconds(double seconds) {
-    if (seconds < 0.001 || seconds > std::numeric_limits<int>::max() / 1000.0) {
+
+/** @brief Проверяет тип и диапазон до сужения JSON-целого к int модели. */
+int ReadInteger(const json::value& value, const std::string_view setting_name,
+        const int minimum = std::numeric_limits<int>::min())
+{
+    constexpr int maximum = std::numeric_limits<int>::max();
+    if (value.is_int64())
+    {
+        const auto integer = value.as_int64();
+        if (integer >= minimum && integer <= maximum)
+        {
+            return static_cast<int>(integer);
+        }
+    }
+    else if (value.is_uint64())
+    {
+        const auto integer = value.as_uint64();
+        if (integer <= static_cast<std::uint64_t>(maximum) &&
+                (minimum <= 0 || integer >= static_cast<std::uint64_t>(minimum)))
+        {
+            return static_cast<int>(integer);
+        }
+    }
+    throw std::invalid_argument(std::string(setting_name) + " must be an integer in the supported range");
+}
+
+/** @brief Переводит положительный период в миллисекунды без переполнения. */
+int ToMilliseconds(const double seconds)
+{
+    if (seconds < minimum_period_seconds || seconds > std::numeric_limits<int>::max() / milliseconds_per_second)
+    {
         throw std::invalid_argument("Time setting is outside the supported range");
     }
-    return static_cast<int>(seconds * 1000.0);
+    return static_cast<int>(seconds * milliseconds_per_second);
 }
 } // namespace
 
-JsonLoader::JsonLoader(const std::filesystem::path& json_path) {
-    ifstream ifs(json_path, ios::binary);
-
-    std::ostringstream sstream;
-    if (ifs.is_open()) {
-        sstream << ifs.rdbuf();
-        ifs.close();
-    } else {
-        throw std::runtime_error("Unable to open file"s);
+JsonLoader::JsonLoader(const std::filesystem::path& json_path)
+{
+    std::ifstream input(json_path, std::ios::binary);
+    if (!input)
+    {
+        throw std::runtime_error("Unable to open configuration file");
     }
-
-    config_val_ = json::parse(sstream.str());
+    std::ostringstream contents;
+    contents << input.rdbuf();
+    if (input.bad())
+    {
+        throw std::runtime_error("Unable to read configuration file");
+    }
+    m_config = json::parse(contents.str());
 }
 
-model::Game JsonLoader::LoadGame() {
-
-    if (!config_val_.has_value()) {
-        throw std::runtime_error("Config not loaded");
-    }
-
+model::Game JsonLoader::LoadGame() const
+{
     model::Game game;
-
     AddMaps(game);
     AddLootGeneratorConfig(game);
     AddDogRetirementTime(game);
-
     return game;
 }
 
-std::optional<json::value> JsonLoader::GetConfig() const {
-    return config_val_;
+const json::value& JsonLoader::GetConfiguration() const noexcept
+{
+    return m_config;
 }
 
-void JsonLoader::AddMaps(model::Game& game) {
-    auto config_obj = config_val_->as_object();
-    auto maps_array = config_obj.at("maps").as_array();
+void JsonLoader::AddMaps(model::Game& game) const
+{
+    const auto& configuration = m_config.as_object();
+    const auto& maps = configuration.at("maps").as_array();
+    for(const auto& entry : maps)
+    {
+        const auto& description = entry.as_object();
+        const std::string id(description.at("id").as_string());
+        const std::string name(description.at("name").as_string());
+        model::Map map(model::Map::Id{id}, name);
+        AddRoads(description.at("roads"), map);
+        AddBuildings(description.at("buildings"), map);
+        AddOffices(description.at("offices"), map);
+        AddLoots(description.at("lootTypes"), map);
 
-    for (const auto& map_val : maps_array) {
-        string_view id = map_val.as_object().at("id").as_string();
-        string_view name = map_val.as_object().at("name").as_string();
-        int loot_types_num = map_val.as_object().at("lootTypes").as_array().size();
-
-        model::Map next_map(model::Map::Id{string{id}}, string{name});
-
-        auto roads_val = map_val.as_object().at("roads");
-        AddRoads(next_map, roads_val);
-
-        auto buildings_val = map_val.as_object().at("buildings");
-        AddBuildings(next_map, buildings_val);
-
-        auto offices_val = map_val.as_object().at("offices");
-        AddOffices(next_map, offices_val);
-
-        auto loots_val = map_val.as_object().at("lootTypes");
-        AddLoots(next_map, loots_val);
-
-        if (map_val.as_object().contains("dogSpeed")) {
-            next_map.SetSpeed(Number(map_val.as_object().at("dogSpeed")));
-        } else if (config_obj.contains("defaultDogSpeed")) {
-            next_map.SetSpeed(Number(config_obj.at("defaultDogSpeed")));
+        if (description.contains("dogSpeed"))
+        {
+            map.SetSpeed(ReadNumber(description.at("dogSpeed")));
         }
-        if (next_map.GetSpeed() < 0)
+        else if (configuration.contains("defaultDogSpeed"))
+        {
+            map.SetSpeed(ReadNumber(configuration.at("defaultDogSpeed")));
+        }
+        if (map.GetSpeed() < 0)
+        {
             throw std::invalid_argument("Dog speed must be nonnegative");
-        if (next_map.GetRoads().empty())
+        }
+        if (map.GetRoads().empty())
+        {
             throw std::invalid_argument("A map must have at least one road");
-
-        if (map_val.as_object().count("bagCapacity") > 0) {
-            auto capacity_val = map_val.as_object().at("bagCapacity");
-            if (capacity_val.is_int64()) {
-                int capacity = capacity_val.as_int64();
-                next_map.SetBagCapacity(capacity);
-            }
-        } else if (config_obj.count("defaultBagCapacity") > 0) {
-            auto bag_capacity_val = config_obj.at("defaultBagCapacity");
-            if (bag_capacity_val.is_int64()) {
-                int bag_capacity = bag_capacity_val.as_int64();
-                next_map.SetBagCapacity(bag_capacity);
-            }
         }
-
-        game.AddMap(next_map);
+        if (description.contains("bagCapacity"))
+        {
+            map.SetBagCapacity(ReadInteger(description.at("bagCapacity"), "bagCapacity", 0));
+        }
+        else if (configuration.contains("defaultBagCapacity"))
+        {
+            map.SetBagCapacity(ReadInteger(configuration.at("defaultBagCapacity"), "defaultBagCapacity", 0));
+        }
+        game.AddMap(std::move(map));
     }
 }
 
-void JsonLoader::AddOffices(model::Map& map, json::value& offices_val) {
-    auto offices_array = offices_val.as_array();
-    for (const auto& office_val : offices_array) {
-        auto office_obj = office_val.as_object();
-
-        string_view office_id = office_obj.at("id").as_string();
-        model::Coord x = office_obj.at("x").as_int64();
-        model::Coord y = office_obj.at("y").as_int64();
-        model::Coord off_x = office_obj.at("offsetX").as_int64();
-        model::Coord off_y = office_obj.at("offsetY").as_int64();
-
-        model::Office next_office(model::Office::Id{string{office_id}}, {x, y}, {off_x, off_y});
-        map.AddOffice(next_office);
+void JsonLoader::AddOffices(const json::value& offices, model::Map& map)
+{
+    for(const auto& entry : offices.as_array())
+    {
+        const auto& office = entry.as_object();
+        const std::string id(office.at("id").as_string());
+        const model::Point position{ReadInteger(office.at("x"), "office.x"), ReadInteger(office.at("y"), "office.y")};
+        const model::Offset offset{ReadInteger(office.at("offsetX"), "office.offsetX"),
+                ReadInteger(office.at("offsetY"), "office.offsetY")};
+        map.AddOffice(model::Office{model::Office::Id{id}, position, offset});
     }
 }
 
-void JsonLoader::AddBuildings(model::Map& map, json::value& buildings_val) {
-    auto buildings_array = buildings_val.as_array();
-    for (const auto& building_val : buildings_array) {
-        auto building_obj = building_val.as_object();
-
-        model::Coord x = building_obj.at("x").as_int64();
-        model::Coord y = building_obj.at("y").as_int64();
-
-        model::Dimension w = building_obj.at("w").as_int64();
-        model::Dimension h = building_obj.at("h").as_int64();
-
-        model::Rectangle bounds({x, y}, {w, h});
-
-        model::Building next_building(bounds);
-        map.AddBuilding(next_building);
+void JsonLoader::AddBuildings(const json::value& buildings, model::Map& map)
+{
+    for(const auto& entry : buildings.as_array())
+    {
+        const auto& building = entry.as_object();
+        const model::Point position{
+                ReadInteger(building.at("x"), "building.x"), ReadInteger(building.at("y"), "building.y")};
+        const model::Size size{
+                ReadInteger(building.at("w"), "building.w", 0), ReadInteger(building.at("h"), "building.h", 0)};
+        map.AddBuilding(model::Building{model::Rectangle{position, size}});
     }
 }
 
-void JsonLoader::AddRoads(model::Map& map, json::value& roads_val) {
-    auto roads_array = roads_val.as_array();
-    for (const auto& road_val : roads_array) {
-        auto road_obj = road_val.as_object();
-
-        model::Coord x0 = road_obj.at("x0").as_int64();
-        model::Coord y0 = road_obj.at("y0").as_int64();
-        model::Point start(x0, y0);
-
-        if (road_obj.count("x1") > 0) {
-            model::Coord x1 = road_obj.at("x1").as_int64();
-            model::Road road(model::Road::HORIZONTAL, start, x1);
-            map.AddRoad(road);
-        } else if (road_obj.count("y1") > 0) {
-            model::Coord y1 = road_obj.at("y1").as_int64();
-            model::Road next_road(model::Road::VERTICAL, start, y1);
-            map.AddRoad(next_road);
-        } else {
-            throw std::invalid_argument("invalid json format");
+void JsonLoader::AddRoads(const json::value& roads, model::Map& map)
+{
+    for(const auto& entry : roads.as_array())
+    {
+        const auto& road = entry.as_object();
+        const model::Point start{ReadInteger(road.at("x0"), "road.x0"), ReadInteger(road.at("y0"), "road.y0")};
+        if (road.contains("x1"))
+        {
+            map.AddRoad(model::Road{model::Road::HORIZONTAL, start, ReadInteger(road.at("x1"), "road.x1")});
+        }
+        else if (road.contains("y1"))
+        {
+            map.AddRoad(model::Road{model::Road::VERTICAL, start, ReadInteger(road.at("y1"), "road.y1")});
+        }
+        else
+        {
+            throw std::invalid_argument("Road requires x1 or y1");
         }
     }
 }
 
-void JsonLoader::AddLoots(model::Map& map, json::value& loots_val) {
-    auto loots_array = loots_val.as_array();
-    int loot_type = 0;
-    for (const auto& loot_val : loots_array) {
-        auto loot_obj = loot_val.as_object();
-
-        if (loot_obj.count("value") > 0) {
-            int value = loot_obj.at("value").as_int64();
-            map.AddLoot(loot_type, {loot_type, value});
-            loot_type++;
-        } else {
-            throw std::invalid_argument("invalid json format");
-        }
+void JsonLoader::AddLoots(const json::value& loots, model::Map& map)
+{
+    const auto& types = loots.as_array();
+    if (types.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+    {
+        throw std::invalid_argument("Too many loot types");
+    }
+    int type = 0;
+    for(const auto& entry : types)
+    {
+        const auto& loot = entry.as_object();
+        const int value = ReadInteger(loot.at("value"), "loot.value", 0);
+        map.AddLoot(type, {type, value});
+        ++type;
     }
 }
 
-void JsonLoader::AddLootGeneratorConfig(model::Game& game) {
-    auto config_obj = config_val_->as_object();
-    auto gen_config_obj = config_obj.at("lootGeneratorConfig").as_object();
-    model::LootGeneratorConfig gen_config;
-    gen_config.period = Number(gen_config_obj.at("period"));
-    Milliseconds(gen_config.period);
-    gen_config.probability = Number(gen_config_obj.at("probability"));
-    if (gen_config.probability < 0 || gen_config.probability > 1)
+void JsonLoader::AddLootGeneratorConfig(model::Game& game) const
+{
+    const auto& settings = m_config.as_object().at("lootGeneratorConfig").as_object();
+    const double period = ReadNumber(settings.at("period"));
+    ToMilliseconds(period);
+    const double probability = ReadNumber(settings.at("probability"));
+    if (probability < 0 || probability > 1)
+    {
         throw std::invalid_argument("Probability must be between zero and one");
-    game.SetLootGeneratorConfig(gen_config);
+    }
+    game.SetLootGeneratorConfig({period, probability});
 }
 
-void JsonLoader::AddDogRetirementTime(model::Game& game) {
-    auto config_obj = config_val_->as_object();
-    if (config_obj.count("dogRetirementTime") > 0) {
-        int retirement_time = Milliseconds(Number(config_obj.at("dogRetirementTime")));
-        game.SetDogRetirementTime(retirement_time);
+void JsonLoader::AddDogRetirementTime(model::Game& game) const
+{
+    const auto& settings = m_config.as_object();
+    if (settings.contains("dogRetirementTime"))
+    {
+        game.SetDogRetirementTime(ToMilliseconds(ReadNumber(settings.at("dogRetirementTime"))));
     }
 }
-
 } // namespace json_loader

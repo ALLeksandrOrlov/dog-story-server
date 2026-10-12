@@ -1,4 +1,4 @@
 {
-  "tests/collision-detector-tests.cpp": "8ceb63497b99baa8b6b0233f534aa12c41dea3915a22a823c6c33bb54f2483fe",
-  "tests/loot_generator_tests.cpp": "b84eebe600906bd2e22152e5e6f53594bc0e49bd7bd3387bb92f26f7e64129d4"
+  "tests/collision-detector-tests.cpp": "0aae498a24964431f113c32efa45634739e2fb42a96cfd640106061815509bfe",
+  "tests/loot_generator_tests.cpp": "35035c8fa39ba6d14a04758825a1ba23cd532b18b4e0e85c5d2a842d265978a8"
 }

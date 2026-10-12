@@ -2,7 +2,7 @@
 #ifdef GAME_BASELINE
 #include "retired_player.h"
 #else
-#include "domain/retired_player.h"
+#include "domain/retired_player.hpp"
 #endif
 #include <algorithm>
 #include <tuple>

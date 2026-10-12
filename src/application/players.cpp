@@ -1,120 +1,153 @@
 #include <algorithm>
-
-#include "application/players.h"
 #include <limits>
 #include <random>
-#include <sstream>
 
-namespace app {
+#include "application/players.hpp"
+
+namespace app
+{
 using namespace std::literals;
-const int kTokenSize = 32;
+namespace
+{
+/** @brief Длина генерируемого токена в шестнадцатеричных символах. */
+constexpr size_t token_size = 32;
+/** @brief Алфавит шестнадцатеричного представления токена. */
+constexpr char hex_digits[] = "0123456789abcdef";
+} // namespace
 
-Token RandomToken::Generate() {
-
-    std::random_device random_device_;
-    std::mt19937_64 generator_(random_device_());
-
-    const int kLowerBound = 0;
-    const int kUpperBound = 15;
-    std::uniform_int_distribution<> dist(kLowerBound, kUpperBound);
-    std::stringstream ss;
-
-    for (int i = 0; i < kTokenSize; i++) {
-        ss << std::hex << dist(generator_);
+Token RandomToken::Generate()
+{
+    std::random_device random_device;
+    std::uniform_int_distribution<unsigned> distribution(0, 15);
+    std::string token(token_size, '0');
+    for(auto& digit : token)
+    {
+        digit = hex_digits[distribution(random_device)];
     }
-
-    return Token(ss.str());
+    return Token(std::move(token));
 }
 
-Player::Player(Id id, Token token, GameSession* session, GameSession::DogPtr dog)
-    : id_(id), token_(token), session_(session), dog_(dog) {}
-
-const Player::Id& Player::GetId() const noexcept {
-    return id_;
+Player::Player(const Id id, const Token& token, GameSession* session, const GameSession::DogPtr& dog):
+        m_id(id),
+        m_token(token),
+        m_session(session),
+        m_dog(dog)
+{
 }
 
-std::string Player::GetIdAsString() const {
-    return std::to_string(*id_);
+const Player::Id& Player::GetId() const noexcept
+{
+    return m_id;
 }
 
-const Token& Player::GetToken() const {
-    return token_;
+std::string Player::GetIdAsString() const
+{
+    return std::to_string(*m_id);
 }
 
-std::string Player::GetName() const {
-    return dog_->GetName();
+const Token& Player::GetToken() const
+{
+    return m_token;
 }
 
-GameSession* Player::GetSession() const {
-    return session_;
+std::string Player::GetName() const
+{
+    return m_dog->GetName();
 }
 
-GameSession::DogPtr Player::GetDog() const {
-    return dog_;
+GameSession* Player::GetSession() const
+{
+    return m_session;
 }
 
-void Players::AddPlayer(Player player) {
+GameSession::DogPtr Player::GetDog() const
+{
+    return m_dog;
+}
+
+void Players::AddPlayer(const Player& player)
+{
     const auto id = player.GetId();
     const auto token = player.GetToken();
     if (!player.GetSession() || !player.GetDog() ||
-        player.GetSession()->FindDog(player.GetDog()->GetId()) != player.GetDog())
+            player.GetSession()->FindDog(player.GetDog()->GetId()) != player.GetDog())
+    {
         throw std::invalid_argument("Player must reference a dog in its session");
+    }
     if (*id >= static_cast<unsigned>(std::numeric_limits<int>::max()))
+    {
         throw std::invalid_argument("Player id is outside the supported range");
-    if (token_to_player_.contains(token) ||
-        std::any_of(players_.begin(), players_.end(), [&](const auto& existing) {
-            return existing->GetId() == id ||
-                   (existing->GetSession() == player.GetSession() && existing->GetDog() == player.GetDog());
-        }))
+    }
+    if (m_token_to_player.contains(token) ||
+            std::any_of(m_players.begin(), m_players.end(),
+                    [&](const auto& existing)
+                    {
+                        return existing->GetId() == id ||
+                                (existing->GetSession() == player.GetSession() &&
+                                        existing->GetDog() == player.GetDog());
+                    }))
+    {
         throw std::invalid_argument("Duplicate player identity");
-    auto next_player = std::make_shared<Player>(std::move(player));
-    token_to_player_.emplace(token, next_player);
-    try {
-        players_.push_back(next_player);
-    } catch (...) {
-        token_to_player_.erase(token);
+    }
+    auto next_player = std::make_shared<Player>(player);
+    m_token_to_player.emplace(token, next_player);
+    try
+    {
+        m_players.push_back(next_player);
+    }
+    catch(...)
+    {
+        m_token_to_player.erase(token);
         throw;
     }
-    next_player_id_ = std::max(next_player_id_, static_cast<int>(*id) + 1);
+    m_next_player_id = std::max(m_next_player_id, static_cast<int>(*id) + 1);
 }
 
-int Players::GetNextPlayerId() const noexcept {
-    return next_player_id_;
+int Players::GetNextPlayerId() const noexcept
+{
+    return m_next_player_id;
 }
 
-Players::PlayerPtr Players::FindByToken(Token token) const {
-    if (token_to_player_.count(token) > 0) {
-        return token_to_player_.at(token);
+Players::PlayerPtr Players::FindByToken(const Token& token) const
+{
+    if (m_token_to_player.count(token) > 0)
+    {
+        return m_token_to_player.at(token);
     }
     return nullptr;
 }
 
-std::vector<Players::PlayerPtr> Players::GetSessionPlayersList(const GameSession& session) {
+std::vector<Players::PlayerPtr> Players::GetSessionPlayersList(const GameSession& session) const
+{
     std::vector<PlayerPtr> list;
-    for (auto& player : players_) {
+    for(auto& player : m_players)
+    {
         const GameSession* next_session = player->GetSession();
-        const GameSession::Id& next_session_id = next_session->GetId();
-        const GameSession::Id& session_id = session.GetId();
-        if (next_session_id == session_id) {
+        if (next_session == &session)
+        {
             list.push_back(player);
         }
     }
     return list;
 }
 
-const std::deque<Players::PlayerPtr>& Players::GetPlayersList() const {
-    return players_;
+const std::deque<Players::PlayerPtr>& Players::GetPlayersList() const
+{
+    return m_players;
 }
 
-void Players::RemovePlayer(GameSession::Id session_id, Dog::Id dog_id) {
+void Players::RemovePlayer(const GameSession::Id session_id, const Dog::Id dog_id)
+{
     size_t idx = 0;
-    for (const auto player : players_) {
+    for(const auto player : m_players)
+    {
         auto session = player->GetSession();
         auto dog = player->GetDog();
-        if ((session->GetId() == session_id) && (dog->GetId() == dog_id)) {
-            Token pl_token = players_.at(idx)->GetToken();
-            players_.erase(players_.begin() + idx);
-            token_to_player_.erase(pl_token);
+        if ((session->GetId() == session_id) && (dog->GetId() == dog_id))
+        {
+            Token pl_token = m_players.at(idx)->GetToken();
+            m_players.erase(m_players.begin() + idx);
+            m_token_to_player.erase(pl_token);
             break;
         }
         idx++;

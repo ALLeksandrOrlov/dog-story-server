@@ -1,66 +1,67 @@
-#include "infrastructure/http/http_server.h"
+#include "infrastructure/http/http_server.hpp"
 
-#include <boost/asio/dispatch.hpp>
-#include <iostream>
-
-namespace http_server {
-
-void SessionBase::Run() {
-    // Вызываем метод Read, используя executor объекта stream_.
-    // Таким образом вся работа со stream_ будет выполняться, используя его executor
-    net::dispatch(stream_.get_executor(), beast::bind_front_handler(&SessionBase::Read, GetSharedThis()));
+namespace http_server
+{
+void SessionBase::Run()
+{
+    net::dispatch(m_stream.get_executor(), beast::bind_front_handler(&SessionBase::Read, GetSharedThis()));
 }
 
-void ReportError(beast::error_code ec, std::string_view what) {
-    logger::PrintLog(json::value({{"code"s, ec.value()}, {"text"s, ec.message()}, {"where"s, what}}),
-                     "error"sv);
+void ReportError(const beast::error_code error, const std::string_view operation)
+{
+    logger::PrintLog(json::object{{"code", error.value()}, {"text", error.message()}, {"where", operation}}, "error");
 }
 
-SessionBase::SessionBase(tcp::socket&& socket) : stream_(std::move(socket)) {}
-
-void SessionBase::Read() {
-    using namespace std::literals;
-    // Очищаем запрос от прежнего значения (метод Read может быть вызван несколько раз)
-    request_ = {};
-    stream_.expires_after(30s);
-    // Считываем request_ из stream_, используя buffer_ для хранения считанных данных
-    http::async_read(stream_, buffer_, request_,
-                     // По окончании операции будет вызван метод OnRead
-                     beast::bind_front_handler(&SessionBase::OnRead, GetSharedThis()));
+SessionBase::SessionBase(tcp::socket&& socket):
+        m_stream(std::move(socket))
+{
 }
 
-void SessionBase::OnRead(beast::error_code ec, [[maybe_unused]] std::size_t bytes_read) {
-    using namespace std::literals;
-    if (ec == http::error::end_of_stream) {
-        // Нормальная ситуация - клиент закрыл соединение
-        return Close();
-    }
-    if (ec) {
-        return ReportError(ec, "read"sv);
-    }
-    HandleRequest(std::move(request_));
+void SessionBase::Read()
+{
+    m_request = {};
+    m_stream.expires_after(m_request_timeout);
+    http::async_read(m_stream, m_buffer, m_request, beast::bind_front_handler(&SessionBase::OnRead, GetSharedThis()));
 }
 
-void SessionBase::Close() {
-    beast::error_code ec;
-    stream_.socket().shutdown(tcp::socket::shutdown_send, ec);
-    if (ec) {
-        return ReportError(ec, "socket shutdown"sv);
+void SessionBase::OnRead(const beast::error_code error, [[maybe_unused]] const std::size_t bytes_read)
+{
+    if (error == http::error::end_of_stream)
+    {
+        Close();
+        return;
+    }
+    if (error)
+    {
+        ReportError(error, "read");
+        return;
+    }
+    HandleRequest(std::move(m_request));
+}
+
+void SessionBase::Close()
+{
+    beast::error_code error;
+    m_stream.socket().shutdown(tcp::socket::shutdown_send, error);
+    if (error)
+    {
+        ReportError(error, "socket shutdown");
     }
 }
 
-void SessionBase::OnWrite(bool close, beast::error_code ec, [[maybe_unused]] std::size_t bytes_written) {
-    if (ec) {
-        return ReportError(ec, "write"sv);
+void SessionBase::OnWrite(
+        const bool close, const beast::error_code error, [[maybe_unused]] const std::size_t bytes_written)
+{
+    if (error)
+    {
+        ReportError(error, "write");
+        return;
     }
-
-    if (close) {
-        // Семантика ответа требует закрыть соединение
-        return Close();
+    if (close)
+    {
+        Close();
+        return;
     }
-
-    // Считываем следующий запрос
     Read();
 }
-
 } // namespace http_server

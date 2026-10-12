@@ -1,10 +1,10 @@
-#include "application/app.h"
-#include "controller/request_handler.h"
-#include "infrastructure/config/json_loader.h"
-#include "infrastructure/http/run_workers.h"
-#include "infrastructure/persistence/app_serialization.h"
-#include "infrastructure/persistence/model_serialization.h"
-#include "infrastructure/persistence/state_store.h"
+#include "application/app.hpp"
+#include "controller/request_handler.hpp"
+#include "infrastructure/config/json_loader.hpp"
+#include "infrastructure/http/run_workers.hpp"
+#include "infrastructure/persistence/app_serialization.hpp"
+#include "infrastructure/persistence/model_serialization.hpp"
+#include "infrastructure/persistence/state_store.hpp"
 #include "support/memory_repository.h"
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/asio/post.hpp>
@@ -94,8 +94,8 @@ TEST_CASE("Restored identities allocate from the maximum instead of insertion or
     session->AddLoot({model::Loot::Id{20}, {0, 10}, {0, 0}});
     session->AddLoot({model::Loot::Id{2}, {0, 10}, {0, 0}});
     REQUIRE(session->GetNextLootId() == 21);
-    f.players.AddPlayer({app::Player::Id{20}, Token{"one"}, session, session->FindDog(model::Dog::Id{20})});
-    f.players.AddPlayer({app::Player::Id{2}, Token{"two"}, session, session->FindDog(model::Dog::Id{2})});
+    f.players.AddPlayer({app::Player::Id{20}, app::Token{"one"}, session, session->FindDog(model::Dog::Id{20})});
+    f.players.AddPlayer({app::Player::Id{2}, app::Token{"two"}, session, session->FindDog(model::Dog::Id{2})});
     REQUIRE(f.players.GetNextPlayerId() == 21);
 }
 
@@ -126,7 +126,7 @@ TEST_CASE("Repository failures remain server errors and do not disclose internal
     app::Application application(f.game, f.players, app::ApplicationMode::Manual, false, {}, repository);
     auto joined = application.JoinGame(model::Map::Id{"square"}, "Courier");
     boost::asio::io_context context;
-    view::JsonView view(*f.loader.GetConfig());
+    view::JsonView view(f.loader.GetConfiguration());
     std::string diagnostic;
     auto handler = std::make_shared<http_handler::RequestHandler>(
         ".", boost::asio::make_strand(context), application, view,

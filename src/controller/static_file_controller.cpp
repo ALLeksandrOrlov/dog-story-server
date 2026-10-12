@@ -1,56 +1,74 @@
-#include "controller/static_file_controller.h"
-#include "common/string_processing.h"
 #include <algorithm>
 #include <cctype>
 
-namespace http_handler {
+#include "common/string_processing.hpp"
+
+#include "controller/static_file_controller.hpp"
+
+namespace http_handler
+{
 using namespace http;
+namespace
+{
+/** @brief Версия HTTP/1.1 в представлении Boost.Beast. */
+constexpr unsigned http_version = 11;
+} // namespace
 
-FileRequestResult StaticFileController::Handle(const StringRequest& req, std::string_view uri) {
-    auto uri_items = Split(uri, '/');
+FileRequestResult StaticFileController::Handle(const StringRequest& /*request*/, const std::string_view uri) const
+{
+    const auto uri_items = util::Split(uri, '/');
 
-    fs::path uri_path{static_path_};
-    for (auto item : uri_items) {
+    fs::path uri_path{m_static_path};
+    for(const auto item : uri_items)
+    {
         uri_path /= item;
     }
 
-    if (!fs::exists(uri_path)) {
+    if (!fs::exists(uri_path))
+    {
         ApiRequestResult response;
         response.result(status::not_found);
-        response.insert(field::content_type, ContentType::TEXT_PLAIN);
+        response.insert(field::content_type, ContentType::text_plain);
         return response;
     }
 
-    if (!IsSubPath(uri_path, static_path_)) {
+    if (!IsSubPath(uri_path, m_static_path))
+    {
         ApiRequestResult response;
         response.result(status::bad_request);
-        response.insert(field::content_type, ContentType::TEXT_PLAIN);
+        response.insert(field::content_type, ContentType::text_plain);
         return response;
     }
 
-    if (fs::is_directory(uri_path)) {
+    if (fs::is_directory(uri_path))
+    {
         fs::path index_html_path{uri_path / "index.html"s};
-        if (!fs::exists(index_html_path)) {
+        if (!fs::exists(index_html_path))
+        {
             ApiRequestResult response;
             response.result(status::not_found);
-            response.insert(field::content_type, ContentType::TEXT_PLAIN);
+            response.insert(field::content_type, ContentType::text_plain);
             return response;
         }
 
-        if (!IsSubPath(index_html_path, static_path_)) {
+        if (!IsSubPath(index_html_path, m_static_path))
+        {
             StringResponse response;
             response.result(status::bad_request);
-            response.set(field::content_type, ContentType::TEXT_PLAIN);
+            response.set(field::content_type, ContentType::text_plain);
             return response;
         }
 
         response<file_body> response;
-        response.version(11);
+        response.version(http_version);
         response.result(status::ok);
-        response.insert(field::content_type, ContentType::TEXT_HTML);
+        response.insert(field::content_type, ContentType::text_html);
 
         file_body::value_type file;
-        if (sys::error_code ec; file.open(index_html_path.c_str(), beast::file_mode::read, ec), ec) {
+        sys::error_code error;
+        file.open(index_html_path.c_str(), beast::file_mode::read, error);
+        if (error)
+        {
             throw std::runtime_error("Unable to open file"s);
         }
 
@@ -60,12 +78,15 @@ FileRequestResult StaticFileController::Handle(const StringRequest& req, std::st
     }
 
     response<file_body> response;
-    response.version(11);
+    response.version(http_version);
     response.result(status::ok);
     response.insert(field::content_type, GetFileContentType(uri_path));
 
     file_body::value_type file;
-    if (sys::error_code ec; file.open(uri_path.c_str(), beast::file_mode::read, ec), ec) {
+    sys::error_code error;
+    file.open(uri_path.c_str(), beast::file_mode::read, error);
+    if (error)
+    {
         throw std::runtime_error("Unable to open file"s);
     }
 
@@ -74,76 +95,100 @@ FileRequestResult StaticFileController::Handle(const StringRequest& req, std::st
     return response;
 }
 
-std::string_view StaticFileController::GetFileContentType(const fs::path& file_path) {
+std::string_view StaticFileController::GetFileContentType(const fs::path& file_path)
+{
     std::string ext = file_path.extension().string();
 
-    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
+    std::transform(ext.begin(), ext.end(), ext.begin(),
+            [](const unsigned char c)
+            {
+                return std::tolower(c);
+            });
 
-    if ((ext == ".htm"sv) || (ext == ".html"sv)) {
-        return ContentType::TEXT_HTML;
+    if ((ext == ".htm"sv) || (ext == ".html"sv))
+    {
+        return ContentType::text_html;
     }
 
-    if (ext == ".css"sv) {
-        return ContentType::TEXT_CSS;
+    if (ext == ".css"sv)
+    {
+        return ContentType::text_css;
     }
 
-    if (ext == ".txt"sv) {
-        return ContentType::TEXT_PLAIN;
+    if (ext == ".txt"sv)
+    {
+        return ContentType::text_plain;
     }
 
-    if (ext == ".js"sv) {
-        return ContentType::TEXT_JAVASCRIPT;
+    if (ext == ".js"sv)
+    {
+        return ContentType::text_javascript;
     }
 
-    if (ext == ".json"sv) {
-        return ContentType::APP_JSON;
+    if (ext == ".json"sv)
+    {
+        return ContentType::app_json;
     }
 
-    if (ext == ".xml"sv) {
-        return ContentType::APP_XML;
+    if (ext == ".xml"sv)
+    {
+        return ContentType::app_xml;
     }
 
-    if (ext == ".png"sv) {
-        return ContentType::IMG_PNG;
+    if (ext == ".png"sv)
+    {
+        return ContentType::img_png;
     }
 
-    if ((ext == ".jpg"sv) || (ext == ".jpe"sv) || (ext == ".jpeg"sv)) {
-        return ContentType::IMG_JPEG;
+    if ((ext == ".jpg"sv) || (ext == ".jpe"sv) || (ext == ".jpeg"sv))
+    {
+        return ContentType::img_jpeg;
     }
 
-    if (ext == ".gif"sv) {
-        return ContentType::IMG_GIF;
+    if (ext == ".gif"sv)
+    {
+        return ContentType::img_gif;
     }
 
-    if (ext == ".bmp"sv) {
-        return ContentType::IMG_BMP;
+    if (ext == ".bmp"sv)
+    {
+        return ContentType::img_bmp;
     }
 
-    if (ext == ".ico"sv) {
-        return ContentType::IMG_ICO;
+    if (ext == ".ico"sv)
+    {
+        return ContentType::img_ico;
     }
 
-    if ((ext == ".tiff"sv) || (ext == ".tif"sv)) {
-        return ContentType::IMG_TIFF;
+    if ((ext == ".tiff"sv) || (ext == ".tif"sv))
+    {
+        return ContentType::img_tiff;
     }
 
-    if ((ext == ".svg"sv) || (ext == ".svgz"sv)) {
-        return ContentType::IMG_SVG;
+    if ((ext == ".svg"sv) || (ext == ".svgz"sv))
+    {
+        return ContentType::img_svg;
     }
 
-    if (ext == ".mp3"sv) {
-        return ContentType::AUDIO_MPEG;
+    if (ext == ".mp3"sv)
+    {
+        return ContentType::audio_mpeg;
     }
 
-    return ContentType::APP_OCTET_STREAM;
+    return ContentType::app_octet_stream;
 }
 
-bool StaticFileController::IsSubPath(fs::path path, fs::path base) {
-    path = fs::weakly_canonical(path);
-    base = fs::weakly_canonical(base);
+bool StaticFileController::IsSubPath(const fs::path& path, const fs::path& base)
+{
+    const auto canonical_path = fs::weakly_canonical(path);
+    const auto canonical_base = fs::weakly_canonical(base);
 
-    for (auto b = base.begin(), p = path.begin(); b != base.end(); ++b, ++p) {
-        if (p == path.end() || *p != *b) {
+    auto path_component = canonical_path.begin();
+    for(auto base_component = canonical_base.begin(); base_component != canonical_base.end();
+            ++base_component, ++path_component)
+    {
+        if (path_component == canonical_path.end() || *path_component != *base_component)
+        {
             return false;
         }
     }

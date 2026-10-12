@@ -1,8 +1,8 @@
-#include "application/app.h"
-#include "infrastructure/config/json_loader.h"
-#include "infrastructure/persistence/state_store.h"
+#include "application/app.hpp"
+#include "infrastructure/config/json_loader.hpp"
+#include "infrastructure/persistence/state_store.hpp"
 #include "support/memory_repository.h"
-#include "view/json_view.h"
+#include "view/json_view.hpp"
 #include <boost/json.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
@@ -14,7 +14,7 @@ struct Fixture {
     app::Players players;
     MemoryRepository repository;
     app::Application application{game, players, app::ApplicationMode::Manual, false, {}, repository};
-    view::JsonView view{*loader.GetConfig()};
+    view::JsonView view{loader.GetConfiguration()};
 
     app::JoinGameResult Join(const char* name, const char* map = "square") {
         return application.JoinGame(model::Map::Id{map}, name);

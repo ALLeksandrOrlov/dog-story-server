@@ -1,133 +1,209 @@
-#include "domain/collision_detector.h"
-#include "domain/loot_generator.h"
-#include "domain/model.h"
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <type_traits>
 
-namespace model {
+#include "domain/collision_detector.hpp"
+#include "domain/loot_generator.hpp"
+
+#include "domain/game_session.hpp"
+
+namespace model
+{
 using namespace std::literals;
 using namespace collision_detector;
-namespace {
-class VectorItemGathererProvider : public collision_detector::ItemGathererProvider {
-  public:
-    VectorItemGathererProvider(std::vector<collision_detector::Item> items,
-                               std::vector<collision_detector::Gatherer> gatherers)
-        : items_(items), gatherers_(gatherers) {}
-
-    size_t ItemsCount() const override {
-        return items_.size();
+namespace
+{
+/** @brief Адаптирует снимок движения и предметов к алгоритму обнаружения столкновений. */
+class VectorItemGathererProvider : public collision_detector::ItemGathererProvider
+{
+public:
+    /** @brief Принимает готовые массивы для одного шага симуляции. */
+    VectorItemGathererProvider(
+            std::vector<collision_detector::Item> items, std::vector<collision_detector::Gatherer> gatherers):
+            m_items(std::move(items)),
+            m_gatherers(std::move(gatherers))
+    {
     }
 
-    collision_detector::Item GetItem(size_t idx) const override {
-        return items_.at(idx);
+    /** @brief Возвращает число предметов и офисов в снимке. */
+    size_t ItemsCount() const override
+    {
+        return m_items.size();
     }
 
-    size_t GatherersCount() const override {
-        return gatherers_.size();
+    /** @brief Возвращает объект столкновения по проверяемому индексу. */
+    collision_detector::Item GetItem(const size_t idx) const override
+    {
+        return m_items.at(idx);
     }
 
-    collision_detector::Gatherer GetGatherer(size_t idx) const override {
-        return gatherers_[idx];
+    /** @brief Возвращает число перемещений собак в снимке. */
+    size_t GatherersCount() const override
+    {
+        return m_gatherers.size();
     }
 
-  private:
-    std::vector<collision_detector::Item> items_;
-    std::vector<collision_detector::Gatherer> gatherers_;
+    /** @brief Возвращает перемещение собаки по индексу. */
+    collision_detector::Gatherer GetGatherer(const size_t idx) const override
+    {
+        return m_gatherers[idx];
+    }
+
+private:
+    /** @brief Геометрия предметов и офисов текущего шага. */
+    std::vector<collision_detector::Item> m_items;
+    /** @brief Траектории собак текущего шага. */
+    std::vector<collision_detector::Gatherer> m_gatherers;
 };
 
 } // namespace
-GameSession::GameSession(Id id, const Map* map, LootGeneratorConfig loot_generator_config,
-                         int dog_retirement_time)
-    : id_(id), map_(map), loot_generator_config_(loot_generator_config),
-      dog_retirement_time_(dog_retirement_time),
-      loot_generator_(std::chrono::duration_cast<loot_gen::LootGenerator::TimeInterval>(
-                          std::chrono::duration<double>(loot_generator_config.period)),
-                      loot_generator_config.probability) {
-    if (!map_ || map_->GetRoads().empty())
-        throw std::invalid_argument("Session requires a map with roads");
+namespace
+{
+/** @brief Проверяет секунды до преобразования в целочисленную длительность. */
+loot_gen::LootGenerator::TimeInterval ValidateLootPeriod(const LootGeneratorConfig config)
+{
+    constexpr double milliseconds_per_second = 1000.0;
+    if (!std::isfinite(config.period) || config.period < 1.0 / milliseconds_per_second ||
+            config.period > std::numeric_limits<int>::max() / milliseconds_per_second)
+    {
+        throw std::invalid_argument("Invalid loot generator period");
+    }
+    return std::chrono::duration_cast<loot_gen::LootGenerator::TimeInterval>(
+            std::chrono::duration<double>(config.period));
+}
+} // namespace
+
+GameSession::GameSession(
+        const Id id, const Map* map, const LootGeneratorConfig loot_generator_config, const int dog_retirement_time):
+        m_id(id),
+        m_map(map),
+        m_dog_retirement_time(dog_retirement_time),
+        m_loot_generator(ValidateLootPeriod(loot_generator_config), loot_generator_config.probability)
+{
+    if (!m_map || m_map->GetRoads().empty() || dog_retirement_time <= 0)
+    {
+        throw std::invalid_argument("Session requires a map with roads and positive retirement time");
+    }
 }
 
-const GameSession::Id& GameSession::GetId() const noexcept {
-    return id_;
+const GameSession::Id& GameSession::GetId() const noexcept
+{
+    return m_id;
 }
 
-void GameSession::AddDog(Dog dog) {
+void GameSession::AddDog(const Dog& dog)
+{
     const auto id = dog.GetId();
-    if (dog_id_to_dog_.contains(id))
+    if (m_dog_id_to_dog.contains(id))
+    {
         throw std::invalid_argument("Duplicate dog id");
+    }
     if (*id >= static_cast<unsigned>(std::numeric_limits<int>::max()))
+    {
         throw std::invalid_argument("Dog id is outside the supported range");
-    auto next_dog = std::make_shared<Dog>(std::move(dog));
-    dog_id_to_dog_.emplace(id, next_dog);
-    try {
-        dogs_.push_back(next_dog);
-    } catch (...) {
-        dog_id_to_dog_.erase(id);
+    }
+    auto next_dog = std::make_shared<Dog>(dog);
+    m_dog_id_to_dog.emplace(id, next_dog);
+    try
+    {
+        m_dogs.push_back(next_dog);
+    }
+    catch(...)
+    {
+        m_dog_id_to_dog.erase(id);
         throw;
     }
-    next_dog_id_ = std::max(next_dog_id_, static_cast<int>(*id) + 1);
+    m_next_dog_id = std::max(m_next_dog_id, static_cast<int>(*id) + 1);
 }
 
-const GameSession::Dogs& GameSession::GetDogs() const {
-    return dogs_;
+const GameSession::Dogs& GameSession::GetDogs() const
+{
+    return m_dogs;
 }
 
-GameSession::DogPtr GameSession::FindDog(const Dog::Id& id) const {
-    if (dog_id_to_dog_.count(id) > 0) {
-        return dog_id_to_dog_.at(id);
+GameSession::DogPtr GameSession::FindDog(const Dog::Id& id) const
+{
+    if (m_dog_id_to_dog.count(id) > 0)
+    {
+        return m_dog_id_to_dog.at(id);
     }
     return nullptr;
 }
 
-int GameSession::GetNextDogId() const noexcept {
-    return next_dog_id_;
+int GameSession::GetNextDogId() const noexcept
+{
+    return m_next_dog_id;
 }
 
-void GameSession::AddLoot(Loot loot) {
+void GameSession::AddLoot(const Loot& loot)
+{
     const auto id = loot.GetId();
-    if (std::any_of(loot_list_.begin(), loot_list_.end(),
-                    [id](const auto& item) { return item.GetId() == id; }))
+    if (std::any_of(m_loot_list.begin(), m_loot_list.end(),
+                [id](const auto& item)
+                {
+                    return item.GetId() == id;
+                }))
+    {
         throw std::invalid_argument("Duplicate loot id");
+    }
     if (*id >= static_cast<unsigned>(std::numeric_limits<int>::max()))
+    {
         throw std::invalid_argument("Loot id is outside the supported range");
-    loot_list_.push_back(std::move(loot));
-    next_loot_id_ = std::max(next_loot_id_, static_cast<int>(*id) + 1);
+    }
+    m_loot_list.emplace_back(loot);
+    m_next_loot_id = std::max(m_next_loot_id, static_cast<int>(*id) + 1);
 }
 
-GameSession::Loots GameSession::GetLoots() const {
-    return loot_list_;
+GameSession::Loots GameSession::GetLoots() const
+{
+    return m_loot_list;
 }
 
-int GameSession::GetNextLootId() const noexcept {
-    return next_loot_id_;
+int GameSession::GetNextLootId() const noexcept
+{
+    return m_next_loot_id;
 }
 
-const Map* GameSession::GetMap() const {
-    return map_;
+const Map* GameSession::GetMap() const
+{
+    return m_map;
 }
 
-void GameSession::SetDogRetirementHandler(std::function<void(Id, Dog::Id)> on_dog_retirement) {
-    on_dog_retirement_ = on_dog_retirement;
+void GameSession::SetDogRetirementHandler(const std::function<void(Id, Dog::Id)>& on_dog_retirement)
+{
+    m_on_dog_retirement = on_dog_retirement;
 }
 
-void GameSession::UpdateState(int time_delta) {
-    for (const auto& dog : dogs_)
+void GameSession::UpdateState(const int time_delta)
+{
+    if (time_delta < 0)
+    {
+        throw InvalidTimeDelta("Time delta must be nonnegative");
+    }
+    for(const auto& dog : m_dogs)
+    {
         dog->ValidateTimeDelta(time_delta);
+    }
     UpdateDogsState(time_delta);
     UpdateCollisions(time_delta);
     UpdateLoot(time_delta);
 }
 
-std::pair<double, Position> GameSession::GetCloserToPoint(Position current_pos, Position target_pos) const {
-    const Map::Roads& roads = map_->GetRoads();
+std::pair<double, Position> GameSession::GetCloserToPoint(const Position current_pos, const Position target_pos) const
+{
+    const Map::Roads& roads = m_map->GetRoads();
     std::vector<std::pair<double, Position>> distances_to_target;
-    for (const auto& road : roads) {
-        if (road.IsInArea(current_pos)) {
+    for(const auto& road : roads)
+    {
+        if (road.IsInArea(current_pos))
+        {
             Position next_point = road.GetNearestPos(target_pos);
-            double distance = sqrt(pow(next_point.x - target_pos.x, 2) + pow(next_point.y - target_pos.y, 2));
-            bool is_target_reached = !(distance > 0.);
-            if (is_target_reached) {
+            double distance = std::hypot(next_point.x - target_pos.x, next_point.y - target_pos.y);
+            const bool is_target_reached = geom::AreNear(distance, 0.0);
+            if (is_target_reached)
+            {
                 distances_to_target.clear();
                 distances_to_target.push_back({distance, next_point});
                 break;
@@ -137,126 +213,169 @@ std::pair<double, Position> GameSession::GetCloserToPoint(Position current_pos, 
     }
 
     if (distances_to_target.empty())
+    {
         throw std::logic_error("Player position is outside map roads");
+    }
     return *std::min_element(distances_to_target.begin(), distances_to_target.end(),
-                             [](const std::pair<double, Position>& a, const std::pair<double, Position>& b) {
-                                 return a.first < b.first;
-                             });
+            [](const std::pair<double, Position>& a, const std::pair<double, Position>& b)
+            {
+                return a.first < b.first;
+            });
 }
 
-void GameSession::RemoveDog(size_t index) {
-    auto dog_id = dogs_.at(index)->GetId();
-    dogs_.erase(dogs_.begin() + index);
-    dog_id_to_dog_.erase(dog_id);
+void GameSession::RemoveDogAt(const size_t index)
+{
+    auto dog_id = m_dogs.at(index)->GetId();
+    m_dogs.erase(m_dogs.begin() + index);
+    m_dog_id_to_dog.erase(dog_id);
 }
 
-int GameSession::GetRandomLootType() {
-    std::random_device rd;
-    std::uniform_int_distribution<int> dist(0, map_->GetLootTypesNum() - 1);
-    return dist(rd);
+void GameSession::RemoveDog(const Dog::Id& id) noexcept
+{
+    const auto found = std::find_if(m_dogs.begin(), m_dogs.end(),
+            [&id](const auto& dog)
+            {
+                return dog->GetId() == id;
+            });
+    if (found != m_dogs.end())
+    {
+        m_dogs.erase(found);
+        m_dog_id_to_dog.erase(id);
+    }
 }
 
-void GameSession::RemoveLoot(size_t index) {
-    loot_list_.erase(loot_list_.begin() + index);
+void GameSession::RemoveCollectedLoot(const std::vector<bool>& collected) noexcept
+{
+    static_assert(std::is_nothrow_move_assignable_v<Loot>);
+    for(size_t index = collected.size(); index > 0; --index)
+    {
+        if (collected[index - 1])
+        {
+            m_loot_list.erase(m_loot_list.begin() + index - 1);
+        }
+    }
 }
 
-void GameSession::UpdateDogsState(int time_delta) {
+void GameSession::UpdateDogsState(const int time_delta)
+{
     size_t idx = 0;
     std::vector<size_t> retired_dog_idxes;
-    for (auto& dog : dogs_) {
+    for(auto& dog : m_dogs)
+    {
         dog->UpdateState(time_delta);
-        if (dog->GetInactivityTime() >= dog_retirement_time_) {
+        if (dog->GetInactivityTime() >= m_dog_retirement_time)
+        {
             retired_dog_idxes.push_back(idx);
         }
         idx++;
     }
 
-    for (auto it = retired_dog_idxes.rbegin(); it != retired_dog_idxes.rend(); ++it) {
+    for(auto it = retired_dog_idxes.rbegin(); it != retired_dog_idxes.rend(); ++it)
+    {
         const auto index = *it;
-        if (on_dog_retirement_) {
-            on_dog_retirement_(id_, dogs_.at(index)->GetId());
-        } else {
-            throw std::runtime_error("on_dog_retirement_ not set");
+        if (m_on_dog_retirement)
+        {
+            m_on_dog_retirement(m_id, m_dogs.at(index)->GetId());
+        }
+        else
+        {
+            throw std::runtime_error("m_on_dog_retirement not set");
         }
 
-        RemoveDog(index);
+        RemoveDogAt(index);
     }
 }
 
-void GameSession::UpdateCollisions(int time_delta) {
+void GameSession::UpdateCollisions(const int time_delta)
+{
     using namespace std::literals;
 
     std::vector<Gatherer> gatherers;
-    for (auto& dog : dogs_) {
+    for(auto& dog : m_dogs)
+    {
         Position pos = dog->GetPosition();
         geom::Vec2D speed = dog->GetSpeed();
-        const double MSEC_IN_SEC = 1000.;
-        Position target = {(pos.x + speed.x * (time_delta / MSEC_IN_SEC)),
-                           (pos.y + speed.y * (time_delta / MSEC_IN_SEC))};
+        constexpr double milliseconds_per_second = 1000.0;
+        Position target = {(pos.x + speed.x * (time_delta / milliseconds_per_second)),
+                (pos.y + speed.y * (time_delta / milliseconds_per_second))};
 
         auto distance_pos = GetCloserToPoint(pos, target);
-        if (distance_pos.first > 0.) {
+        if (!geom::AreNear(distance_pos.first, 0.0))
+        {
             distance_pos = GetCloserToPoint(distance_pos.second, target);
         }
 
-        if (distance_pos.first > 0.) {
+        if (!geom::AreNear(distance_pos.first, 0.0))
+        {
             dog->SetDirection(""s);
         }
         dog->SetPosition(distance_pos.second);
 
-        const double DOG_WIDTH = 0.6;
-        gatherers.push_back({{pos.x, pos.y}, {distance_pos.second.x, distance_pos.second.y}, DOG_WIDTH});
+        constexpr double dog_width = 0.6;
+        gatherers.push_back({{pos.x, pos.y}, {distance_pos.second.x, distance_pos.second.y}, dog_width});
     }
 
     std::vector<Item> items;
-    for (const auto& loot : loot_list_) {
+    for(const auto& loot : m_loot_list)
+    {
         Position pos = loot.GetPos();
         items.push_back({{pos.x, pos.y}, 0.});
     }
-    for (const auto& office : map_->GetOffices()) {
+    for(const auto& office : m_map->GetOffices())
+    {
         Point pos = office.GetPosition();
-        const double OFFICE_WIDTH = 0.5;
-        items.push_back({{static_cast<double>(pos.x), static_cast<double>(pos.y)}, OFFICE_WIDTH});
+        constexpr double office_width = 0.5;
+        items.push_back({{static_cast<double>(pos.x), static_cast<double>(pos.y)}, office_width});
     }
 
     VectorItemGathererProvider provider(std::move(items), std::move(gatherers));
     std::vector<GatheringEvent> events(FindGatherEvents(provider));
 
-    std::unordered_map<size_t, size_t> item_to_gather;
-    std::vector<size_t> loot_event_idxes;
-    for (const auto& event : events) {
-        auto dog = dogs_[event.gatherer_id];
-        if (event.item_id < loot_list_.size()) {
-            if ((dog->GetLootList().size() < dog->GetBagCapacity()) &&
-                (item_to_gather.count(event.item_id) == 0)) {
-                item_to_gather[event.item_id] = event.gatherer_id;
-                dog->PutLootInBag(loot_list_[event.item_id]);
-                loot_event_idxes.push_back(event.item_id);
+    // Выделяем учётную память до изменений сумок; отметка успешного подбора уже не может бросить.
+    std::vector<bool> collected(m_loot_list.size(), false);
+    try
+    {
+        for(const auto& event : events)
+        {
+            auto dog = m_dogs[event.gatherer_id];
+            if (event.item_id < m_loot_list.size())
+            {
+                if (dog->HasBagSpace() && !collected[event.item_id])
+                {
+                    dog->PutLootInBag(m_loot_list[event.item_id]);
+                    collected[event.item_id] = true;
+                }
             }
-        } else {
-            dog->ExchangeLoot();
+            else
+            {
+                dog->ExchangeLoot();
+            }
         }
     }
-
-    // remove from map
-    std::sort(loot_event_idxes.rbegin(), loot_event_idxes.rend());
-    for (size_t idx : loot_event_idxes) {
-        RemoveLoot(idx);
+    catch(...)
+    {
+        // Даже при отказе последующей доставки предмет не может остаться одновременно на карте и в сумке.
+        RemoveCollectedLoot(collected);
+        throw;
     }
+    RemoveCollectedLoot(collected);
 }
 
-void GameSession::UpdateLoot(int time_delta) {
+void GameSession::UpdateLoot(const int time_delta)
+{
     using namespace loot_gen;
-    if (map_->GetLootTypesNum() == 0)
+    if (m_map->GetLootTypesNum() == 0)
+    {
         return;
-    unsigned new_loots_num = loot_generator_.Generate(LootGenerator::TimeInterval(time_delta),
-                                                      static_cast<unsigned>(loot_list_.size()),
-                                                      static_cast<unsigned>(dogs_.size()));
-    for (; new_loots_num > 0; new_loots_num--) {
-        int random_loot_type = GetRandomLootType();
-        Position random_point = map_->GetRandomPoint();
+    }
+    unsigned new_loots_num = m_loot_generator.Generate(LootGenerator::TimeInterval(time_delta),
+            static_cast<unsigned>(m_loot_list.size()), static_cast<unsigned>(m_dogs.size()));
+    for(; new_loots_num > 0; new_loots_num--)
+    {
+        const int random_loot_type = m_map->GetRandomLootType();
+        Position random_point = m_map->GetRandomPoint();
         auto loot_id = Loot::Id(GetNextLootId());
-        auto loot_opt = map_->GetLoot(random_loot_type);
+        auto loot_opt = m_map->GetLoot(random_loot_type);
         AddLoot(Loot(loot_id, *loot_opt, random_point));
     }
 }

@@ -1,4 +1,4 @@
-"""Verify the original client, permitting only the pinned local dependency repair."""
+"""Verify client resources against runtime and source manifests with jQuery URL normalization."""
 import hashlib
 import json
 from pathlib import Path
@@ -21,5 +21,5 @@ for name, expected in original.items():
         body = body.replace(b'/js/jquery-3.6.0.min.js',
                             b'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js')
     if hashlib.sha256(body).hexdigest() != expected:
-        raise SystemExit(f'Original client changed beyond the local jQuery URL: {name}')
-print('Original client/config preserved except pinned local jQuery URLs; three restored runtime assets verified.')
+        raise SystemExit(f'Client source checksum mismatch after jQuery URL normalization: {name}')
+print('Verified client resources and map configuration against both manifests.')

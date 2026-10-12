@@ -1,5 +1,5 @@
-#include "controller/request_handler.h"
-#include "infrastructure/config/json_loader.h"
+#include "controller/request_handler.hpp"
+#include "infrastructure/config/json_loader.hpp"
 #include "support/memory_repository.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
@@ -24,7 +24,7 @@ TEST_CASE("Static requests ignore queries without losing encoded filename charac
     app::Players players;
     MemoryRepository repository;
     app::Application application(game, players, app::ApplicationMode::Manual, false, {}, repository);
-    view::JsonView view(*loader.GetConfig());
+    view::JsonView view(loader.GetConfiguration());
     boost::asio::io_context context;
     auto handler = std::make_shared<http_handler::RequestHandler>(
         directory.string(), boost::asio::make_strand(context), application, view);

@@ -1,9 +1,8 @@
-"""Run unchanged backend integration tests with a dedicated static-file fixture.
+"""Run backend integration tests with a dedicated static-file fixture.
 
-These older scripts assert the literal 'Courtyard' in the served HTML. Their
-HTTP/DB scenarios are independent of the production client. Copying their exact
-bytes into an isolated tree lets them test static serving without changing the
-original frontend or editing the preserved test files.
+The static-serving checks expect the literal 'Courtyard' in the served HTML.
+An isolated directory provides that fixture and the configuration required by
+the HTTP/DB scenarios. Client resources have their own integration checks.
 """
 import argparse
 import shutil

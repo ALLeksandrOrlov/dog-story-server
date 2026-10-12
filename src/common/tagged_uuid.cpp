@@ -1,23 +1,32 @@
-#include "common/tagged_uuid.h"
-
+/**
+ * @file
+ * @brief Изолирует генерацию и строковый разбор UUID средствами Boost.
+ */
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/string_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-namespace util {
-namespace detail {
+#include "common/tagged_uuid.hpp"
 
-UUIDType NewUUID() {
+namespace util
+{
+namespace detail
+{
+
+UUIDType NewUUID()
+{
     return boost::uuids::random_generator()();
 }
 
-std::string UUIDToString(const UUIDType& uuid) {
+std::string UUIDToString(const UUIDType& uuid)
+{
     return to_string(uuid);
 }
 
-UUIDType UUIDFromString(std::string_view str) {
-    boost::uuids::string_generator gen;
-    return gen(str.begin(), str.end());
+UUIDType UUIDFromString(const std::string_view text)
+{
+    boost::uuids::string_generator generator{};
+    return generator(text.begin(), text.end());
 }
 
 } // namespace detail

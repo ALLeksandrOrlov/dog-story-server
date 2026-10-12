@@ -1,48 +1,68 @@
 #include <charconv>
 
-#include "common/string_processing.h"
-#include "controller/request_handler.h"
+#include "common/string_processing.hpp"
 
-namespace http_handler {
+#include "controller/request_handler.hpp"
 
-std::string RequestHandler::DecodeURI(std::string_view target) {
+namespace http_handler
+{
+namespace
+{
+/** @brief Число шестнадцатеричных цифр в percent-escape. */
+constexpr std::size_t escape_digits = 2;
+/** @brief Основание системы счисления URI escape. */
+constexpr int hex_base = 16;
+} // namespace
+
+std::string RequestHandler::DecodeURI(const std::string_view target)
+{
     std::string decoded;
     decoded.reserve(target.size());
-    for (size_t i = 0; i < target.size(); ++i) {
+    for(size_t i = 0; i < target.size(); ++i)
+    {
         char ch = target[i];
-        if (ch == '%') {
-            if (i + 2 >= target.size())
+        if (ch == '%')
+        {
+            if (i + escape_digits >= target.size())
+            {
                 throw InvalidTarget("Incomplete percent escape");
+            }
             unsigned value = 0;
             const char* first = target.data() + i + 1;
-            const auto result = std::from_chars(first, first + 2, value, 16);
-            if (result.ec != std::errc{} || result.ptr != first + 2) {
+            const auto result = std::from_chars(first, first + escape_digits, value, hex_base);
+            if (result.ec != std::errc{} || result.ptr != first + escape_digits)
+            {
                 throw InvalidTarget("Invalid percent escape");
             }
             ch = static_cast<char>(value);
-            i += 2;
-        } else if (ch == '+') {
+            /** @brief Число шестнадцатеричных цифр в percent-escape. */
+            i += escape_digits;
+        }
+        else if (ch == '+')
+        {
             ch = ' ';
         }
         if (ch == '\0')
+        {
             throw InvalidTarget("NUL is not allowed in a request target");
+        }
         decoded += ch;
     }
     return decoded;
 }
 
-bool RequestHandler::IsApiRequest(std::string_view target) {
-    auto target_items = Split(target, '/');
-    if ((target_items.size() > 0) && (target_items[0] == "api"s)) {
-        return true;
-    }
-
-    return false;
+bool RequestHandler::IsApiRequest(const std::string_view target)
+{
+    const auto target_items = util::Split(target, '/');
+    return !target_items.empty() && target_items.front() == "api";
 }
 
-StringResponse RequestHandler::ReportServerError(const StringRequest& req, std::string_view message) const {
-    if (report_error_)
-        report_error_(message);
+StringResponse RequestHandler::ReportServerError(const StringRequest& req, const std::string_view message) const
+{
+    if (m_report_error)
+    {
+        m_report_error(message);
+    }
     ApiRequestResult response;
     response.result(http::status::internal_server_error);
     response.version(req.version());

@@ -1,0 +1,524 @@
+{
+  "uid": "dog-story",
+  "title": "Dog Story — сервер",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "tags": [
+    "dog-story"
+  ],
+  "timezone": "browser",
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Запросы в секунду",
+      "description": "Ответы API и статических файлов. Классы HTTP-кодов ограничивают число серий.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "sum by (status_class) (rate(dog_story_http_requests_total{job=\"dog-story\"}[$__rate_interval]))",
+          "legendFormat": "{{status_class}}",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Задержка подготовки ответа",
+      "description": "Время до отправки ответа, по журналу сервера. Не включает передачу по сети; исходная точность 1 мс.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "sum(rate(dog_story_http_request_duration_seconds_sum{job=\"dog-story\"}[$__rate_interval])) / clamp_min(sum(rate(dog_story_http_request_duration_seconds_count{job=\"dog-story\"}[$__rate_interval])), 1e-9)",
+          "legendFormat": "Средняя",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(dog_story_http_request_duration_seconds_bucket{job=\"dog-story\"}[$__rate_interval])))",
+          "legendFormat": "p95",
+          "refId": "B",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Доля ошибок HTTP",
+      "description": "Доля ответов соответствующего класса среди всех ответов.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "100 * sum(rate(dog_story_http_requests_total{job=\"dog-story\",status_class=\"4xx\"}[$__rate_interval])) / clamp_min(sum(rate(dog_story_http_requests_total{job=\"dog-story\"}[$__rate_interval])), 1e-9)",
+          "legendFormat": "4xx",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "100 * sum(rate(dog_story_http_requests_total{job=\"dog-story\",status_class=\"5xx\"}[$__rate_interval])) / clamp_min(sum(rate(dog_story_http_requests_total{job=\"dog-story\"}[$__rate_interval])), 1e-9)",
+          "legendFormat": "5xx",
+          "refId": "B",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Доступность сбора метрик",
+      "description": "1 — доступно, 0 — недоступно. Доступность экспортера не является проверкой здоровья игры.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "up{job=~\"dog-story|node\"}",
+          "legendFormat": "{{job}}",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "dog_story_log_readable{job=\"dog-story\"}",
+          "legendFormat": "Журнал доступен",
+          "refId": "B",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "CPU Linux-хоста",
+      "description": "На Docker Desktop/Lima это CPU Linux VM, а не физического macOS-хоста.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{job=\"node\",mode=\"idle\"}[$__rate_interval])))",
+          "legendFormat": "CPU",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Память Linux-хоста",
+      "description": "Занятая память Linux-хоста; доступная память включает освобождаемый файловый кэш.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes{job=\"node\"} / node_memory_MemTotal_bytes{job=\"node\"})",
+          "legendFormat": "RAM",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Заполнение файловых систем",
+      "description": "Процент недоступного обычному пользователю пространства, включая резерв файловой системы.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "100 * (1 - node_filesystem_avail_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/host.*\"} / node_filesystem_size_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/host.*\"})",
+          "legendFormat": "{{mountpoint}}",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Дисковый ввод-вывод Linux-хоста",
+      "description": "Все устройства Linux-хоста; виртуальные и составные устройства могут учитывать один IO несколько раз.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "sum(rate(node_disk_read_bytes_total{job=\"node\"}[$__rate_interval]))",
+          "legendFormat": "Чтение",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "sum(rate(node_disk_written_bytes_total{job=\"node\"}[$__rate_interval]))",
+          "legendFormat": "Запись",
+          "refId": "B",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Ошибки сбора журнала",
+      "description": "Ошибки чтения и повреждённые/слишком длинные записи; игровой сервер продолжает работать.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "rate(dog_story_log_parse_errors_total{job=\"dog-story\"}[$__rate_interval])",
+          "legendFormat": "Формат записи",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "rate(dog_story_log_read_errors_total{job=\"dog-story\"}[$__rate_interval])",
+          "legendFormat": "Чтение файла",
+          "refId": "B",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Ошибки обработчика запросов",
+      "description": "События request failed; отдельно от HTTP 5xx, поскольку ответ мог не быть сформирован.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dog-story-prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dog-story-prometheus"
+          },
+          "expr": "rate(dog_story_request_failures_total{job=\"dog-story\"}[$__rate_interval])",
+          "legendFormat": "request failed",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    }
+  ],
+  "links": []
+}

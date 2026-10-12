@@ -44,6 +44,7 @@ services:
         python3 tools/run_http_integration.py build/build/Release/game_server &&
         python3 tests/api_edge_check.py build/build/Release/game_server &&
         python3 tests/runtime_failure_check.py build/build/Release/game_server &&
+        python3 tests/postgres_review_check.py build/build/Release/game_server &&
         python3 tests/original_client_http.py build/build/Release/game_server
 volumes:
   database:

@@ -1,9 +1,61 @@
+---
+# clang-format 18.1.8; component-dependent include groups are set by check_style.py.
 BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
 IndentWidth: 4
-ColumnLimit: 110
-BreakBeforeBraces: Attach
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 8
+ConstructorInitializerIndentWidth: 8
+ColumnLimit: 120
+AccessModifierOffset: -4
+IndentAccessModifiers: false
+NamespaceIndentation: None
+IndentCaseLabels: true
+IndentCaseBlocks: false
+AlignAfterOpenBracket: DontAlign
+AlignOperands: DontAlign
+BreakBeforeBraces: Allman
+BreakConstructorInitializers: AfterColon
+PackConstructorInitializers: Never
 PointerAlignment: Left
 ReferenceAlignment: Left
-AllowShortFunctionsOnASingleLine: Empty
+DerivePointerAlignment: false
+QualifierAlignment: Left
+AllowShortBlocksOnASingleLine: Never
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: None
+AllowShortLoopsOnASingleLine: false
+InsertBraces: true
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: false
+  AfterIfMacros: true
+  AfterForeachMacros: false
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  BeforeNonEmptyParentheses: false
+# Treat `if` as the only control keyword requiring a space before parentheses.
+IfMacros: [if]
+SpacesInParens: Never
+SpaceBeforeCtorInitializerColon: false
 SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+# Disable the built-in rule that puts the corresponding header first.
+IncludeIsMainRegex: 'a^'
+IncludeCategories:
+  - Regex: '^<(boost|pqxx)/'
+    Priority: 2
+  - Regex: '^<'
+    Priority: 1
+  - Regex: '^"'
+    Priority: 3
+FixNamespaceComments: true
+ShortNamespaceLines: 0
+LineEnding: LF
+InsertNewlineAtEOF: true
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false

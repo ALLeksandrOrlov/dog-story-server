@@ -1,6 +1,6 @@
-#include "application/app.h"
-#include "controller/request_handler.h"
-#include "infrastructure/config/json_loader.h"
+#include "application/app.hpp"
+#include "controller/request_handler.hpp"
+#include "infrastructure/config/json_loader.hpp"
 #include "support/memory_repository.h"
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
@@ -14,7 +14,7 @@ struct Fixture {
     app::Players players;
     MemoryRepository repository;
     app::Application application{game, players, app::ApplicationMode::Manual, false, {}, repository};
-    view::JsonView view{*loader.GetConfig()};
+    view::JsonView view{loader.GetConfiguration()};
     app::JoinGameResult Join(const std::string& name) {
         return application.JoinGame(model::Map::Id{"square"}, name);
     }
@@ -132,7 +132,7 @@ TEST_CASE("Directory index symlinks cannot escape the static root") {
 TEST_CASE("Integral JSON numbers load as numeric settings and empty roads fail cleanly") {
     TemporaryDirectory dir;
     Fixture f;
-    auto config = *f.loader.GetConfig();
+    auto config = f.loader.GetConfiguration();
     auto& object = config.as_object();
     object["defaultDogSpeed"] = 3;
     object["dogRetirementTime"] = 60;
