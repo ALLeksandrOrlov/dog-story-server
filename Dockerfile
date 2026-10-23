@@ -6,7 +6,8 @@ COPY requirements-build.txt conanfile.txt ./
 RUN pip install --no-cache-dir -r requirements-build.txt \
     && conan profile detect \
     && conan install . --output-folder=build --build=missing \
-       -s build_type=Release -s compiler.cppstd=20 -c tools.build:jobs=2
+       -s build_type=Release -s compiler.cppstd=20 -c tools.build:jobs=2 \
+    && conan cache clean "*" --source --build --download --temp
 RUN apt-get update && apt-get install -y --no-install-recommends doxygen \
     && rm -rf /var/lib/apt/lists/*
 COPY CMakeLists.txt Doxyfile ./
