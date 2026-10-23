@@ -1,53 +1,53 @@
 # HTTP API
 
-Базовый путь: `/api/v1`. Тела запросов и ответов — JSON.
-Авторизация: `Authorization: Bearer <authToken>`.
+Base path: `/api/v1`. Request and response bodies use JSON.
+Authorization: `Authorization: Bearer <authToken>`.
 
-| Метод | Путь | Назначение |
+| Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/maps` | Список карт: `id`, `name` |
-| GET, HEAD | `/maps/{id}` | Дороги, здания, офисы и типы предметов |
-| POST | `/game/join` | Вход; возвращает `authToken` и `playerId` |
-| GET, HEAD | `/game/players` | Игроки текущей сессии |
-| GET, HEAD | `/game/state` | Положение, скорость, направление, сумка, очки и предметы |
-| POST | `/game/player/action` | Изменение направления |
-| POST | `/game/tick` | Продвижение ручного времени |
-| GET | `/game/records?start=0&maxItems=100` | Завершённые игры участников |
+| GET | `/maps` | List maps: `id`, `name` |
+| GET, HEAD | `/maps/{id}` | Roads, buildings, offices, and item types |
+| POST | `/game/join` | Join a game; returns `authToken` and `playerId` |
+| GET, HEAD | `/game/players` | Players in the current session |
+| GET, HEAD | `/game/state` | Position, velocity, direction, bag, score, and items |
+| POST | `/game/player/action` | Change direction |
+| POST | `/game/tick` | Advance manual game time |
+| GET | `/game/records?start=0&maxItems=100` | Completed player games |
 
-Вход:
+Joining a game:
 
 ```json
 {"mapId": "map1", "userName": "Courier"}
 ```
 
-Имя должно быть непустым и не содержать нулевого символа. Недопустимое имя
-возвращает 400 `invalidArgument` с сообщением `Invalid name`; игрок не создаётся.
+The name must be nonempty and must not contain a null character. An invalid name
+returns 400 `invalidArgument` with the message `Invalid name`; no player is created.
 
-Движение: `{"move":"R"}`. Направления: `U`, `D`, `L`, `R`; пустая строка
-останавливает игрока. Движение продолжается до новой команды или границы дороги.
-Для команды движения обязательны токен и `Content-Type: application/json`.
+Movement: `{"move":"R"}`. Directions: `U`, `D`, `L`, `R`; an empty string
+stops the player. Movement continues until a new command or the edge of a road.
+Movement commands require a token and `Content-Type: application/json`.
 
-Ручной тик: `{"timeDelta":50}`, время в миллисекундах. При автоматическом
-режиме этот endpoint возвращает ошибку. Значение должно быть целым числом
-от 0 до 2147483647. Переполнение накопленного времени игрока также отклоняется:
-ответ 400, состояние игры не меняется. Браузерный клиент не отправляет ручные тики.
+Manual tick: `{"timeDelta":50}`, with time in milliseconds. This endpoint returns
+an error in automatic mode. The value must be an integer from 0 to 2147483647.
+An overflow of accumulated player time is also rejected: the response is 400,
+and the game state remains unchanged. The browser client does not send manual ticks.
 
-Рекорды упорядочены по убыванию очков, затем по возрастанию времени игры и имени.
-`playTime` в ответе измеряется в секундах; в базе хранится в миллисекундах.
-Отрицательные `start` и `maxItems`, а также запрос более 100 записей
-отклоняются с кодом 400. Пустая выборка (`maxItems=0`) допустима.
+Records are ordered by descending score, then ascending play time and name.
+The response reports `playTime` in seconds; the database stores it in milliseconds.
+Negative `start` or `maxItems` values and requests for more than 100 records
+are rejected with status 400. An empty result set (`maxItems=0`) is allowed.
 
-Основные коды ошибок: `invalidArgument`, `invalidMethod`, `invalidToken`,
-`unknownToken`, `mapNotFound`, `badRequest`. Некорректный формат токена и
-неизвестный корректно оформленный токен различаются. Повреждённые percent-escape
-последовательности и нулевой байт в адресе возвращают 400 `badRequest`.
+Main error codes: `invalidArgument`, `invalidMethod`, `invalidToken`,
+`unknownToken`, `mapNotFound`, and `badRequest`. A malformed token is distinguished
+from a correctly formatted but unknown token. Invalid percent-escape sequences
+and null bytes in the URL return 400 `badRequest`.
 
-## Правила обработки запросов
+## Request handling rules
 
-- Список карт и рекордов принимает только GET. У рекордов заголовок `Allow`
-  содержит `GET, HEAD`, однако HEAD возвращает ошибку метода.
-- При неверном методе список карт возвращает текст `Invalid method` с JSON Content-Type.
-- Неподходящий Content-Type у команд движения и тика даёт 401.
-- Разбор пагинации принимает числовой префикс: например, `start=2abc` задаёт
-  смещение 2. Непарсируемое значение оставляет параметр по умолчанию.
-- Для HEAD на поддерживающих его маршрутах обработчик формирует тело как для GET.
+- Map and record lists accept GET only. The records endpoint includes `GET, HEAD`
+  in its `Allow` header, but HEAD returns a method error.
+- An invalid method for the map list returns the text `Invalid method` with a JSON Content-Type.
+- An unsupported Content-Type for movement and tick commands returns 401.
+- Pagination parsing accepts a numeric prefix: for example, `start=2abc` sets
+  an offset of 2. A value that cannot be parsed leaves the parameter at its default.
+- On routes that support HEAD, the handler builds the same body as for GET.

@@ -14,11 +14,11 @@
 
 namespace
 {
-/** @brief Временный файл конфигурации для проверки границ входных данных. */
+/** @brief Temporary configuration file for testing input boundaries. */
 class ConfigurationFile
 {
 public:
-    /** @brief Выделяет отдельный каталог и загружает исходную тестовую конфигурацию. */
+    /** @brief Creates a dedicated directory and loads the base test configuration. */
     ConfigurationFile() :
         m_directory(std::filesystem::temp_directory_path() /
                 ("infrastructure-review-" + domain::RetiredPlayerId::New().ToString())),
@@ -27,20 +27,20 @@ public:
         std::filesystem::create_directory(m_directory);
     }
 
-    /** @brief Удаляет временные данные без исключений из деструктора. */
+    /** @brief Removes temporary data without throwing from the destructor. */
     ~ConfigurationFile()
     {
         std::error_code error;
         std::filesystem::remove_all(m_directory, error);
     }
 
-    /** @brief Возвращает изменяемое описание конфигурации только для подготовки проверки. */
+    /** @brief Returns mutable configuration data solely for test setup. */
     boost::json::object& GetConfiguration()
     {
         return m_configuration.as_object();
     }
 
-    /** @brief Сохраняет JSON и передаёт его настоящему загрузчику. */
+    /** @brief Saves the JSON and passes it to the real loader. */
     model::Game LoadGame() const
     {
         const auto path = m_directory / "config.json";

@@ -5,7 +5,7 @@ namespace view
 namespace json = boost::json;
 namespace
 {
-/** @brief Число миллисекунд в секунде публичного поля playTime. */
+/** @brief Milliseconds per second in the public playTime field. */
 constexpr double milliseconds_per_second = 1000.0;
 } // namespace
 JsonView::JsonView(const json::value& config)

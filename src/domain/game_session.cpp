@@ -15,11 +15,11 @@ using namespace std::literals;
 using namespace collision_detector;
 namespace
 {
-/** @brief Адаптирует снимок движения и предметов к алгоритму обнаружения столкновений. */
+/** @brief Adapts a movement and item snapshot to the collision detection algorithm. */
 class VectorItemGathererProvider : public collision_detector::ItemGathererProvider
 {
 public:
-    /** @brief Принимает готовые массивы для одного шага симуляции. */
+    /** @brief Accepts prepared arrays for one simulation step. */
     VectorItemGathererProvider(
             std::vector<collision_detector::Item> items, std::vector<collision_detector::Gatherer> gatherers):
             m_items(std::move(items)),
@@ -27,41 +27,41 @@ public:
     {
     }
 
-    /** @brief Возвращает число предметов и офисов в снимке. */
+    /** @brief Returns the number of items and offices in the snapshot. */
     size_t ItemsCount() const override
     {
         return m_items.size();
     }
 
-    /** @brief Возвращает объект столкновения по проверяемому индексу. */
+    /** @brief Returns a collision object with bounds checking. */
     collision_detector::Item GetItem(const size_t idx) const override
     {
         return m_items.at(idx);
     }
 
-    /** @brief Возвращает число перемещений собак в снимке. */
+    /** @brief Returns the number of dog movements in the snapshot. */
     size_t GatherersCount() const override
     {
         return m_gatherers.size();
     }
 
-    /** @brief Возвращает перемещение собаки по индексу. */
+    /** @brief Returns a dog's movement by index. */
     collision_detector::Gatherer GetGatherer(const size_t idx) const override
     {
         return m_gatherers[idx];
     }
 
 private:
-    /** @brief Геометрия предметов и офисов текущего шага. */
+    /** @brief Item and office geometry for the current step. */
     std::vector<collision_detector::Item> m_items;
-    /** @brief Траектории собак текущего шага. */
+    /** @brief Dog paths for the current step. */
     std::vector<collision_detector::Gatherer> m_gatherers;
 };
 
 } // namespace
 namespace
 {
-/** @brief Проверяет секунды до преобразования в целочисленную длительность. */
+/** @brief Validates seconds before conversion to an integer duration. */
 loot_gen::LootGenerator::TimeInterval ValidateLootPeriod(const LootGeneratorConfig config)
 {
     constexpr double milliseconds_per_second = 1000.0;
@@ -331,7 +331,7 @@ void GameSession::UpdateCollisions(const int time_delta)
     VectorItemGathererProvider provider(std::move(items), std::move(gatherers));
     std::vector<GatheringEvent> events(FindGatherEvents(provider));
 
-    // Выделяем учётную память до изменений сумок; отметка успешного подбора уже не может бросить.
+    // Allocate bookkeeping storage before changing bags so recording a successful pickup cannot throw.
     std::vector<bool> collected(m_loot_list.size(), false);
     try
     {
@@ -354,7 +354,7 @@ void GameSession::UpdateCollisions(const int time_delta)
     }
     catch(...)
     {
-        // Даже при отказе последующей доставки предмет не может остаться одновременно на карте и в сумке.
+        // Even if a later delivery fails, an item cannot remain both on the map and in a bag.
         RemoveCollectedLoot(collected);
         throw;
     }

@@ -4,7 +4,7 @@
   "tests/application_tests.cpp": "e99ee6247a340629dcf47b909eaa042b4c9dd21072852178c33033527dee1329",
   "tests/original_client_http.py": "61867e1e058d4696b513bbb1da58db5ba662b3f69726c3d1b15c578906146746",
   "tests/static_query_tests.cpp": "4050bd1840208f08ef0bfc12602b176e7d1ba26ceb46c63ce6bab14591d32db6",
-  "tests/client-runtime.sha256.json": "f2d3fb49608aeac6ed8d1c2a6a02645170f2648e2eaf73cd6e059d5b58a6a251",
+  "tests/client-runtime.sha256.json": "96762b10e475788034250e1620caf1641c90c68ac6ebd5352b9e1ec14eb07345",
   "tests/docker_smoke.py": "b4135de3515cbbdc8b32b9b95cc2fd5f728dcb6aebf2f34f0bcc28d7e0c91811",
   "tests/upstream.sha256.json": "e0e37b84254cae91ae871f5c7100e666b94d84119c001f29a382cec768aea1f0",
   "tests/collision-detector-tests.cpp": "0aae498a24964431f113c32efa45634739e2fb42a96cfd640106061815509bfe",

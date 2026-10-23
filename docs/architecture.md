@@ -1,108 +1,109 @@
-# Архитектура
+# Architecture
 
-Сервер использует MVC с отдельным прикладным слоем. Model составляют `domain`
-и `application`: домен реализует игровые правила, приложение координирует сценарии.
-Controller переводит HTTP-запросы в вызовы приложения. View формирует JSON-ответы;
-браузерный клиент работает с ними через API.
+The server uses MVC with a separate application layer. The model consists of
+`domain` and `application`: the domain implements game rules, and the application
+coordinates use cases. The controller translates HTTP requests into application
+calls. The view builds JSON responses, which the browser client consumes through the API.
 
 ```mermaid
 flowchart LR
-    Client[HTTP-клиент] --> Router[RequestHandler]
+    Client[HTTP client] --> Router[RequestHandler]
     Router --> API[ApiController]
     Router --> Files[StaticFileController]
     API --> App[Application]
     API --> View[JsonView]
     App --> Domain[Game / GameSession / Dog / Map]
     App --> Port[RetiredPlayerRepository]
-    Postgres[PostgreSQL adapter] -. реализует .-> Port
+    Postgres[PostgreSQL adapter] -. implements .-> Port
     Config[JsonLoader] --> Domain
     Config --> View
     Snapshot[StateStore] --> Domain
     Snapshot --> Players[Players]
 ```
 
-## Границы ответственности
+## Responsibility boundaries
 
-`domain` отвечает за карты, движение, столкновения, предметы, очки и игровое время.
-Он не зависит от HTTP, JSON, PostgreSQL или файловой системы. Генератор предметов
-принадлежит сессии и накапливает время между тиками. Модель проверяет допустимость
-позиций, скоростей, вместимости сумки и числовых диапазонов. Доменные компоненты
-находятся в заголовках `geometry_types`, `map`, `loot`, `dog`, `game_session` и `game`.
+`domain` handles maps, movement, collisions, items, scores, and game time.
+It does not depend on HTTP, JSON, PostgreSQL, or the file system. The item generator
+belongs to a session and accumulates time between ticks. The model validates
+positions, velocities, bag capacity, and numeric ranges. Domain components live
+in the `geometry_types`, `map`, `loot`, `dog`, `game_session`, and `game` headers.
 
-`Application` выполняет сценарии входа, авторизации, движения, чтения состояния
-и продвижения времени. Результаты запросов — обычные C++-структуры со снимками
-значений; представление не получает изменяемый указатель на игрока. При завершении
-игры участника приложение записывает результат через `RetiredPlayerRepository`
-и удаляет авторизацию. Репозиторий реализует требуемые операции хранения без
-привязки приложения к SQL; в тестах используется реализация в памяти.
+`Application` implements joining, authorization, movement, state queries, and
+advancing time. Query results are plain C++ structures containing value snapshots;
+the view does not receive mutable player pointers. When a player retires, the
+application saves the result through `RetiredPlayerRepository` and removes their
+authorization. The repository provides the required persistence operations without
+coupling the application to SQL; tests use an in-memory implementation.
 
-`ApiController` проверяет метод, авторизацию и входной JSON, вызывает сценарий
-и выбирает HTTP-статус. `JsonView` отвечает за имена полей, структуру JSON и единицы
-времени в ответах. Неизменяемые описания карт включают метаданные предметов,
-необходимые клиенту, не вводя зависимость домена от JSON.
+`ApiController` checks the method, authorization, and input JSON, invokes a use case,
+and selects the HTTP status. `JsonView` owns field names, JSON structure, and time
+units in responses. Immutable map descriptions include the item metadata needed
+by the client without introducing a JSON dependency into the domain.
 
-`RequestHandler` декодирует адрес и направляет запрос к API либо к статическим
-файлам. Контроллеры, транспорт и журнал собираются в отдельные библиотеки;
-допустимые локальные include проверяются `tools/check_architecture.py`.
+`RequestHandler` decodes the URL and routes the request to the API or static files.
+Controllers, transport, and logging are built as separate libraries;
+`tools/check_architecture.py` checks allowed local includes.
 
-`main.cpp` собирает приложение: создаёт конфигурацию, модель, репозиторий,
-представление, контроллеры и HTTP-транспорт, определяет их время жизни и порядок
-остановки. Прикладные алгоритмы находятся в домене и приложении.
+`main.cpp` assembles the application: it creates the configuration, model, repository,
+view, controllers, and HTTP transport, and defines their lifetimes and shutdown order.
+Application logic lives in the domain and application layers.
 
-## Выполнение и владение
+## Execution and ownership
 
-Все операции API и таймер игры используют один Asio strand. Изменения игрового
-состояния и обращения к единственному соединению PostgreSQL выполняются
-последовательно. Статические файлы обслуживаются вне игрового strand.
-Перед отправкой ответ передаётся в strand соответствующего сокета; сессия
-и тело ответа живут до завершения асинхронной записи.
+All API operations and the game timer share one Asio strand. Changes to game state
+and access to the single PostgreSQL connection execute sequentially. Static files
+are served outside the game strand. Before a response is sent, it is handed over
+to the corresponding socket strand; the session and response body remain alive
+until the asynchronous write completes.
 
-`Game`, `GameSession` и `Players` запрещают копирование агрегатов с живыми связями.
-Коллекции доступны для чтения, структурные изменения выполняются методами модели.
-`Database` использует pImpl: драйвер PostgreSQL и SQL-адаптер скрыты в реализации.
-Копирование и перемещение владельца подключения запрещены, поэтому выданная ссылка
-на репозиторий действует до уничтожения `Database`.
+`Game`, `GameSession`, and `Players` prohibit copying aggregates with live references.
+Collections are read-only to callers; model methods perform structural changes.
+`Database` uses pImpl to hide the PostgreSQL driver and SQL adapter in its implementation.
+The connection owner cannot be copied or moved, so a repository reference remains
+valid until `Database` is destroyed.
 
-При входе токен выбирается до изменения сессии. Если регистрация игрока
-не удаётся, добавленная собака удаляется без записи рекорда. Доставка проверяет
-итоговый счёт до изменения сумки и очков. Успешный подбор удаляет предмет с карты
-даже при ошибке последующего события; это не предполагает отката всего тика.
+A token is selected before the session changes during a join operation. If player
+registration fails, the newly added dog is removed without recording a result.
+Delivery validates the resulting score before modifying the bag or score.
+A successful pickup removes the item from the map even if a later event fails;
+this does not imply rollback of the entire tick.
 
-## Хранение состояния
+## State persistence
 
-Результаты завершённых игр записываются в PostgreSQL через Repository.
-Активные сессии и авторизация сохраняются отдельно: `StateStore` сериализует
-снимок во временный файл и затем заменяет итоговый файл переименованием.
-Период сохранения измеряется игровым временем; запись выполняется при
-`elapsed > period` после последнего успешного сохранения.
+Completed game results are written to PostgreSQL through a repository.
+Active sessions and authorization are saved separately: `StateStore` serializes
+a snapshot to a temporary file, then renames it to replace the destination file.
+The save interval is measured in game time; a write occurs when `elapsed > period`
+since the last successful save.
 
-Восстановление сначала собирает временную модель и проверяет связи; ошибочный
-снимок не изменяет целевую игру. При штатной остановке обработка запросов
-прекращается, рабочие потоки присоединяются, затем записывается последний снимок.
-При фатальном исключении фонового обработчика контекст останавливается, потоки
-присоединяются, а процесс возвращает код 1 без замены последнего снимка.
+Recovery first builds a temporary model and validates its relationships; an invalid
+snapshot does not change the target game. During normal shutdown, request processing
+stops, worker threads are joined, and the final snapshot is written. A fatal
+exception in a background handler stops the context, joins the threads, and exits
+with code 1 without replacing the last snapshot.
 
-## Стиль и документация
+## Style and documentation
 
-C++20, четыре пробела, Allman-скобки, строки до 120 символов.
-Заголовки имеют расширение `.hpp`. Типы и методы используют
-PascalCase, переменные — snake_case, закрытые поля — префикс `m_`. Форматтер
-и правила проверки описаны в [кодстайле](codestyle.md). Стандартные интерфейсы
-и точки расширения Boost используют предусмотренные библиотеками имена:
-`what`, `serialize` и операторы.
+C++20, four spaces, Allman braces, and a 120-character line limit.
+Headers use the `.hpp` extension. Types and methods use PascalCase; variables use
+snake_case; private fields use the `m_` prefix. Formatting and validation rules
+are described in the [style guide](codestyle.md). Standard interfaces and Boost
+extension points retain the names required by their libraries, such as
+`what`, `serialize`, and operators.
 
-Doxygen в заголовках описывает ответственность классов, владение зависимостями,
-условия вызова и существенные ошибки методов.
+Doxygen comments in headers describe class responsibilities, dependency ownership,
+preconditions, and significant method errors.
 
-## Ограничения
+## Limitations
 
-- Модель рассчитана на последовательные обращения внутри strand; её методы
-  не поддерживают произвольные параллельные вызовы.
-- PostgreSQL вызывается синхронно. Медленная база задерживает API и игровые тики.
-- Активный мир, файловый снимок и таблица результатов не образуют общую транзакцию.
-  Ошибка посреди тика не откатывает весь мир. При неопределённом результате COMMIT
-  повторное сохранение не имеет гарантии идемпотентности и может создать дубликат
-  результата.
-- Снимок не хранит скорость движения и счётчики времени. После восстановления
-  игрок стоит до новой команды, а отсчёт времени начинается заново. Атомарная
-  замена файла не гарантирует сохранность при потере питания.
+- The model expects sequential access within the strand; its methods do not support
+  arbitrary concurrent calls.
+- PostgreSQL calls are synchronous. A slow database delays API requests and game ticks.
+- The active world, file snapshot, and results table do not share a transaction.
+  An error during a tick does not roll back the entire world. If the outcome of COMMIT
+  is uncertain, retrying the save is not guaranteed to be idempotent and may create
+  a duplicate result.
+- Snapshots do not store velocity or time counters. After recovery, a player remains
+  stationary until a new command arrives, and time counters start again. Atomic file
+  replacement does not guarantee durability in a power failure.

@@ -10,19 +10,19 @@
 namespace http_handler
 {
 /**
- * @brief Разделяет запросы к API и статическим файлам и изолирует исключения HTTP-границей.
- * @details Объект создаётся через shared_ptr: отложенный вызов удерживает обработчик до отправки ответа.
- * API исполняется в переданном strand; статические файлы обрабатываются в контексте сокета.
+ * @brief Routes API and static file requests and contains exceptions at the HTTP boundary.
+ * @details Created through shared_ptr: deferred calls retain the handler until the response is sent.
+ * The API runs on the supplied strand; static files are handled in the socket's execution context.
  */
 class RequestHandler : public std::enable_shared_from_this<RequestHandler>
 {
 public:
-    /** @brief Приёмник диагностических сообщений о внутренних ошибках. */
+    /** @brief Receives diagnostic messages about internal errors. */
     using ErrorReporter = std::function<void(std::string_view)>;
-    /** @brief Последовательный исполнитель прикладных операций. */
+    /** @brief Serial executor for application operations. */
     using Strand = net::strand<net::io_context::executor_type>;
 
-    /** @brief Заимствует Application и JsonView; они должны пережить все незавершённые запросы. */
+    /** @brief Borrows Application and JsonView; both must outlive all pending requests. */
     RequestHandler(const std::string_view static_path, const Strand api_strand, app::Application& app,
             const view::JsonView& view, ErrorReporter report_error = {}):
             m_api(app, view),
@@ -32,16 +32,16 @@ public:
     {
     }
 
-    /** @brief Запрещает копирование обработчика с незавершёнными операциями. */
+    /** @brief Prevents copying a handler with pending operations. */
     RequestHandler(const RequestHandler&) = delete;
-    /** @brief Запрещает замену зависимостей обработчика после запуска. */
+    /** @brief Prevents replacing handler dependencies after startup. */
     RequestHandler& operator=(const RequestHandler&) = delete;
 
     /**
-     * @brief Передаёт запрос контроллеру и вызывает отправку ровно одного результата.
-     * @param request Запрос передаётся во владение отложенной операции API.
-     * @param send Обработчик отправки, поддерживающий строковый и файловый ответ.
-     * @details Некорректный URI даёт 400, исключения прикладного слоя и инфраструктуры — 500.
+     * @brief Passes the request to a controller and sends exactly one result.
+     * @param request Ownership of the request is transferred to the deferred API operation.
+     * @param send Response sender supporting string and file bodies.
+     * @details An invalid URI yields 400; application and infrastructure exceptions yield 500.
      */
     template <typename Send> void operator()(StringRequest&& request, Send&& send)
     {
@@ -58,7 +58,7 @@ public:
                 {
                     try
                     {
-                        // Изменения игры сериализуются независимо от strand клиентского сокета.
+                        // Serialize game changes independently of the client socket's strand.
                         assert(self->m_api_strand.running_in_this_thread());
                         return send(self->m_api.Handle(request, uri));
                     }
@@ -69,7 +69,7 @@ public:
                 };
                 return net::dispatch(m_api_strand, handle);
             }
-            // Возвращаем результат обработки запроса к файлу
+            // Return the result of the static file request.
             return std::visit(
                     [&send](auto&& result)
                     {
@@ -92,29 +92,29 @@ public:
     }
 
 private:
-    /** @brief Ошибка синтаксиса адреса, отличаемая от внутренних отказов обработки. */
+    /** @brief URI syntax error, distinct from an internal processing failure. */
     class InvalidTarget : public std::invalid_argument
     {
     public:
         using std::invalid_argument::invalid_argument;
     };
 
-    /** @brief Декодирует percent-escape; отклоняет неполные последовательности и NUL. */
+    /** @brief Decodes percent escapes; rejects incomplete sequences and NUL. */
     static std::string DecodeURI(const std::string_view target);
 
-    /** @brief Проверяет первый сегмент пути на префикс API. */
+    /** @brief Checks the first path segment for the API prefix. */
     static bool IsApiRequest(const std::string_view target);
 
-    /** @brief Журналирует причину и возвращает 500 без раскрытия внутренних подробностей клиенту. */
+    /** @brief Logs the cause and returns 500 without exposing internal details to the client. */
     StringResponse ReportServerError(const StringRequest& request, const std::string_view message) const;
 
-    /** @brief Контроллер игровых HTTP-маршрутов. */
+    /** @brief Controller for game HTTP routes. */
     ApiController m_api;
-    /** @brief Контроллер файлов в корневом каталоге клиента. */
+    /** @brief Controller for files under the client root directory. */
     StaticFileController m_static_files;
-    /** @brief Общий с таймером исполнитель, защищающий состояние игры. */
+    /** @brief Executor shared with the timer to protect game state. */
     Strand m_api_strand;
-    /** @brief Необязательный приёмник диагностических сообщений. */
+    /** @brief Optional receiver of diagnostic messages. */
     ErrorReporter m_report_error;
 };
 

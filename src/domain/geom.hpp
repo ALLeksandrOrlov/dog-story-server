@@ -7,9 +7,9 @@
 
 namespace geom
 {
-/** @brief Сравнивает вычисленные координаты с относительной машинной погрешностью.
- * @details Масштаб не меньше единицы, поэтому сравнение устойчиво около нуля.
- * Неконечные значения не считаются близкими, включая две одинаковые бесконечности.
+/** @brief Compares computed coordinates using relative machine precision.
+ * @details The scale is at least one, making the comparison stable near zero.
+ * Nonfinite values are not considered close, including two identical infinities.
  */
 inline bool AreNear(const double lhs, const double rhs)
 {
@@ -21,77 +21,77 @@ inline bool AreNear(const double lhs, const double rhs)
     return std::abs(lhs - rhs) <= std::numeric_limits<double>::epsilon() * scale;
 }
 
-/** @brief Двумерный вектор; для скорости компоненты заданы в единицах карты в секунду. */
+/** @brief A two-dimensional vector; velocity components are in map units per second. */
 struct Vec2D
 {
-    /** @brief Горизонтальная координата или компонента вектора. */
+    /** @brief Horizontal coordinate or vector component. */
     double x = 0.0;
-    /** @brief Вертикальная координата или компонента вектора. */
+    /** @brief Vertical coordinate or vector component. */
     double y = 0.0;
-    /** @brief Создаёт нулевой вектор. */
+    /** @brief Creates a zero vector. */
     Vec2D() = default;
-    /** @brief Создаёт вектор по компонентам. */
+    /** @brief Creates a vector from its components. */
     Vec2D(const double x, const double y):
             x(x),
             y(y)
     {
     }
-    /** @brief Масштабирует обе компоненты и возвращает изменённый вектор. */
+    /** @brief Scales both components and returns the modified vector. */
     Vec2D& operator*=(const double scale)
     {
         x *= scale;
         y *= scale;
         return *this;
     }
-    /** @brief Задаёт точный структурный порядок; геометрические проверки используют AreNear. */
+    /** @brief Defines exact structural ordering; geometry checks use AreNear. */
     auto operator<=>(const Vec2D&) const = default;
 };
 
-/** @brief Возвращает новый вектор, умноженный на скаляр. */
+/** @brief Returns a new vector multiplied by a scalar. */
 inline Vec2D operator*(const Vec2D lhs, const double rhs)
 {
     return {lhs.x * rhs, lhs.y * rhs};
 }
 
-/** @brief Поддерживает запись скаляра слева без изменения аргументов. */
+/** @brief Supports a scalar on the left without modifying the arguments. */
 inline Vec2D operator*(const double lhs, const Vec2D rhs)
 {
     return rhs * lhs;
 }
 
-/** @brief Точка геометрического алгоритма столкновений в непрерывном пространстве. */
+/** @brief A point in continuous space used by the collision algorithm. */
 struct Point2D
 {
-    /** @brief Горизонтальная координата или компонента вектора. */
+    /** @brief Horizontal coordinate or vector component. */
     double x = 0.0;
-    /** @brief Вертикальная координата или компонента вектора. */
+    /** @brief Vertical coordinate or vector component. */
     double y = 0.0;
-    /** @brief Создаёт точку начала координат. */
+    /** @brief Creates a point at the origin. */
     Point2D() = default;
-    /** @brief Создаёт точку по координатам. */
+    /** @brief Creates a point from coordinates. */
     Point2D(const double x, const double y):
             x(x),
             y(y)
     {
     }
-    /** @brief Перемещает точку на вектор и возвращает изменённую точку. */
+    /** @brief Translates the point by a vector and returns the modified point. */
     Point2D& operator+=(const Vec2D& rhs)
     {
         x += rhs.x;
         y += rhs.y;
         return *this;
     }
-    /** @brief Задаёт точный структурный порядок; геометрические проверки используют AreNear. */
+    /** @brief Defines exact structural ordering; geometry checks use AreNear. */
     auto operator<=>(const Point2D&) const = default;
 };
 
-/** @brief Возвращает точку после переноса на вектор. */
+/** @brief Returns a point translated by a vector. */
 inline Point2D operator+(const Point2D lhs, const Vec2D& rhs)
 {
     return {lhs.x + rhs.x, lhs.y + rhs.y};
 }
 
-/** @brief Поддерживает симметричную запись переноса точки. */
+/** @brief Supports symmetric notation for point translation. */
 inline Point2D operator+(const Vec2D& lhs, const Point2D rhs)
 {
     return rhs + lhs;

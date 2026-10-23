@@ -176,7 +176,7 @@ void Map::AddOffice(const Office& office)
     }
     catch(std::exception&)
     {
-        // Удаляем офис из вектора, если не удалось вставить в unordered_map
+        // Remove the office from the vector if insertion into unordered_map fails.
         m_offices.pop_back();
         throw;
     }

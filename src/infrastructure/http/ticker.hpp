@@ -17,19 +17,19 @@ namespace net = boost::asio;
 namespace sys = boost::system;
 
 /**
- * @brief Последовательно передаёт приложению реально прошедшее время между тиками.
- * @details Таймер и обработчик используют общий strand приложения. Исключение обработчика
- * передаётся io_context и завершает рабочие потоки через RunWorkers.
+ * @brief Sequentially passes the actual elapsed time between ticks to the application.
+ * @details The timer and handler share the application strand. Handler exceptions
+ * propagate through io_context and stop the worker threads through RunWorkers.
  */
 class Ticker : public std::enable_shared_from_this<Ticker>
 {
 public:
-    /** @brief Последовательный исполнитель общей очереди игровых операций. */
+    /** @brief Sequential executor for the shared game operation queue. */
     using Strand = net::strand<net::io_context::executor_type>;
-    /** @brief Получатель реально прошедшего между тиками интервала в миллисекундах. */
+    /** @brief Receives the actual elapsed interval between ticks in milliseconds. */
     using Handler = std::function<void(std::chrono::milliseconds delta)>;
 
-    /** @brief Принимает положительный период и обработчик игрового времени. */
+    /** @brief Accepts a positive interval and a game-time handler. */
     Ticker(const Strand strand, const std::chrono::milliseconds period, Handler handler):
             m_strand(strand),
             m_period(period),
@@ -41,16 +41,16 @@ public:
         }
     }
 
-    /** @brief Таймер и его обработчики не копируются. */
+    /** @brief Disables copying the timer and its handlers. */
     Ticker(const Ticker&) = delete;
-    /** @brief Таймер не переносится после привязки обработчиков. */
+    /** @brief Disables moving the timer once handlers are bound. */
     Ticker(Ticker&&) = delete;
-    /** @brief Присваивание активного таймера запрещено. */
+    /** @brief Disables copy assignment of an active timer. */
     Ticker& operator=(const Ticker&) = delete;
-    /** @brief Перенос активного таймера запрещён. */
+    /** @brief Disables moving an active timer. */
     Ticker& operator=(Ticker&&) = delete;
 
-    /** @brief Запускает таймер один раз после создания через shared_ptr. */
+    /** @brief Starts the timer once after creation through shared_ptr. */
     void Start()
     {
         net::dispatch(m_strand,
@@ -60,7 +60,7 @@ public:
                     {
                         return;
                     }
-                    /** @brief Не позволяет повторному Start создать второй цикл ожидания. */
+                    /** @brief Prevents repeated Start calls from creating a second wait loop. */
                     self->m_started = true;
                     self->m_last_tick = Clock::now();
                     self->ScheduleTick();
@@ -68,22 +68,22 @@ public:
     }
 
 private:
-    /** @brief Монотонные часы, не зависящие от перевода системного времени. */
+    /** @brief Monotonic clock unaffected by system time adjustments. */
     using Clock = std::chrono::steady_clock;
-    /** @brief Общий с приложением последовательный исполнитель. */
+    /** @brief Sequential executor shared with the application. */
     Strand m_strand;
-    /** @brief Положительный интервал ожидания перед следующим тиком. */
+    /** @brief Positive wait interval before the next tick. */
     std::chrono::milliseconds m_period;
-    /** @brief Владеющий таймер, вызывающий обработчики на игровом strand. */
+    /** @brief Owned timer invoking handlers on the game strand. */
     net::steady_timer m_timer{m_strand};
-    /** @brief Операция продвижения приложения на прошедший интервал. */
+    /** @brief Operation advancing the application by the elapsed interval. */
     Handler m_handler;
-    /** @brief Показание монотонных часов при последнем переданном тике. */
+    /** @brief Monotonic clock reading at the last delivered tick. */
     Clock::time_point m_last_tick{};
-    /** @brief Не позволяет повторному Start создать второй цикл ожидания. */
+    /** @brief Prevents repeated Start calls from creating a second wait loop. */
     bool m_started = false;
 
-    /** @brief Планирует ожидание следующего тика на игровом strand. */
+    /** @brief Schedules the next tick wait on the game strand. */
     void ScheduleTick()
     {
         assert(m_strand.running_in_this_thread());
@@ -95,7 +95,7 @@ private:
                 });
     }
 
-    /** @brief Передаёт монотонный интервал приложению; отменённое ожидание не повторяет. */
+    /** @brief Passes the monotonic interval to the application; does not reschedule a canceled wait. */
     void OnTick(const sys::error_code error)
     {
         assert(m_strand.running_in_this_thread());
@@ -105,7 +105,7 @@ private:
         }
         const auto now = Clock::now();
         const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_last_tick);
-        /** @brief Показание монотонных часов при последнем переданном тике. */
+        /** @brief Monotonic clock reading at the last delivered tick. */
         m_last_tick = now;
         m_handler(elapsed);
         ScheduleTick();

@@ -10,7 +10,7 @@ namespace http_handler
 using namespace http;
 namespace
 {
-/** @brief Версия HTTP/1.1 в представлении Boost.Beast. */
+/** @brief HTTP/1.1 version number as represented by Boost.Beast. */
 constexpr unsigned http_version = 11;
 } // namespace
 

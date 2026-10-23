@@ -1,40 +1,40 @@
-# Тестирование
+# Testing
 
-Docker-сборка запускает CTest для доменной модели, прикладных сценариев,
-HTTP-контракта, конфигурации и сохранения состояния. Интеграционные тесты
-работают с настоящим HTTP-сервером и отдельной базой PostgreSQL.
+The Docker build runs CTest for the domain model, application use cases,
+HTTP contract, configuration, and state persistence. Integration tests
+use a real HTTP server and a separate PostgreSQL database.
 
-## Сборка и модульные тесты
+## Build and unit tests
 
 ```sh
 docker build -t dog-story:local .
 ```
 
-Набор проверяет генерацию предметов, столкновения, движение, авторизацию,
-регистрацию и завершение игроков, инварианты модели, числовые границы,
-владение ресурсами и поведение при исключениях. Проверки сохранения охватывают
-снимки, восстановление связей и ошибки записи.
+The suite checks item generation, collisions, movement, authorization,
+player registration and retirement, model invariants, numeric limits,
+resource ownership, and exception behavior. Persistence checks cover
+snapshots, restored relationships, and write failures.
 
-Для локальной сборки команды приведены в [development.md](development.md).
+For local build commands, see [development.md](development.md).
 
-## Контракт API
+## API contract
 
-Контрактный сценарий содержит 121 шаг: методы, карты, авторизацию, сессии,
-движение, время, рекорды, статику и восстановление. Сравниваются статусы,
-заголовки и JSON; случайные токены нормализуются. Вместо БД в этом сценарии
-используется репозиторий в памяти.
+The contract scenario has 121 steps covering methods, maps, authorization,
+sessions, movement, time, records, static files, and recovery. It compares statuses,
+headers, and JSON, normalizing random tokens. This scenario uses an in-memory
+repository instead of a database.
 
-Ожидаемые ответы заданы в `tests/fixtures/api_contract.json` и
-`tests/fixtures/api_contract_corrections.json`. Проверка сравнивает ответы
-целиком и контролирует целостность фикстур.
+Expected responses are defined in `tests/fixtures/api_contract.json` and
+`tests/fixtures/api_contract_corrections.json`. The check compares entire responses
+and verifies fixture integrity.
 
 ```sh
 python3 tools/check_contract.py build/build/Release/contract_driver
 ```
 
-## HTTP и PostgreSQL
+## HTTP and PostgreSQL
 
-Профиль `test` запускает сценарии в контейнере с отдельной базой `game_test`:
+The `test` profile runs scenarios in a container with a separate `game_test` database:
 
 ```sh
 docker compose up -d db
@@ -43,32 +43,32 @@ docker compose --profile test build test
 docker compose --profile test run --rm test
 ```
 
-Команда создания базы нужна один раз для нового тома. Сценарии добавляют записи,
-поэтому для них используется тестовая база.
+Create the database once for each new volume. The scenarios insert records,
+which is why they use a dedicated test database.
 
-| Сценарий | Что проверяет |
+| Scenario | Coverage |
 | --- | --- |
-| `tools/run_http_integration.py` | Движение, сбор и доставка предметов, завершение игрока, запись рекорда, автоматическое время, снимки и перезапуск |
-| `tests/api_edge_check.py` | Некорректные запросы, граничные значения, параллельные подключения и тики |
-| `tests/runtime_failure_check.py` | Завершение процесса при отказе фоновой записи снимка |
-| `tests/postgres_review_check.py` | Длинные имена, валидацию имени, завершение игры, миграцию схемы и сохранность записей после перезапуска |
-| `tests/original_client_http.py` | Ресурсы клиента и игровые операции на всех трёх картах |
+| `tools/run_http_integration.py` | Movement, item pickup and delivery, player retirement, record persistence, automatic time, snapshots, and restart |
+| `tests/api_edge_check.py` | Invalid requests, boundary values, concurrent joins, and ticks |
+| `tests/runtime_failure_check.py` | Process exit after a background snapshot write fails |
+| `tests/postgres_review_check.py` | Long names, name validation, retirement, schema migration, and record persistence across restarts |
+| `tests/original_client_http.py` | Client resources and game operations on all three maps |
 
-`tools/run_http_integration.py` использует изолированный каталог с тестовой
-HTML-страницей. Рабочий клиент независимо проверяется сценариями
-`tests/original_client_http.py` и `tests/client_resource_check.py`.
+`tools/run_http_integration.py` uses an isolated directory with a test HTML page.
+The actual client is checked independently by `tests/original_client_http.py`
+and `tests/client_resource_check.py`.
 
-Проверки работающего тестового стека:
+Check a running test stack:
 
 ```sh
 python3 tests/docker_smoke.py
 python3 tests/client_resource_check.py
 ```
 
-Первый сценарий создаёт игроков и дважды перезапускает контейнер игры. Для него
-нужен отдельный стенд с собственными томами и базой.
+The first scenario creates players and restarts the game container twice.
+It requires a separate deployment with its own volumes and database.
 
-## Целостность и качество кода
+## Integrity and code quality
 
 ```sh
 python3 tools/verify_original_tests.py
@@ -77,26 +77,26 @@ python3 tools/check_architecture.py
 python3 tools/check_style.py
 ```
 
-Контрольные суммы защищают набор тестов, фикстуры, клиентские ресурсы и
-конфигурацию карт от случайных изменений. Проверка архитектуры контролирует
-направление зависимостей между слоями; форматтер применяет [кодстайл](codestyle.md).
+Checksums protect the test suite, fixtures, client assets, and map configuration
+from accidental changes. The architecture check enforces dependency directions
+between layers; the formatter applies the [style guide](codestyle.md).
 
-Сборка Docker также проверяет Doxygen: недокументированные классы, методы
-и функции считаются ошибкой. HTML и XML формируются из `.hpp` и `.cpp`.
+The Docker build also checks Doxygen: undocumented classes, methods, and functions
+are treated as errors. HTML and XML are generated from `.hpp` and `.cpp` files.
 
-## Мониторинг
+## Monitoring
 
-Тесты экспортёра выполняются при сборке его образа. Они проверяют разбор JSON,
-незавершённые строки, ротацию, перезапуски и восстановление после ошибок чтения.
+Exporter tests run when its image is built. They cover JSON parsing,
+incomplete lines, rotation, restarts, and recovery from read errors.
 
-`tools/check_monitoring.py` создаёт успешные и ошибочные HTTP-запросы,
-проверяет счётчики и гистограмму в Prometheus, метрики CPU/RAM/диска,
-источник данных Grafana и запросы готовой панели.
-Настройка окружения: [monitoring.md](monitoring.md).
+`tools/check_monitoring.py` sends successful and failing HTTP requests,
+checks Prometheus counters and histograms, CPU/RAM/disk metrics,
+the Grafana data source, and queries from the preconfigured dashboard.
+For environment setup, see [monitoring.md](monitoring.md).
 
-## Область покрытия
+## Coverage limits
 
-Функциональные проверки не заменяют нагрузочное тестирование и не фиксируют
-случайную последовательность появления предметов.
-Условия согласованности мира, снимков и базы описаны в
-[архитектуре](architecture.md).
+Functional checks do not replace load testing and do not lock down the random
+sequence of generated items.
+Consistency guarantees for the world, snapshots, and database are described in
+[architecture.md](architecture.md).

@@ -8,9 +8,9 @@ namespace http_handler
 {
 namespace
 {
-/** @brief Число шестнадцатеричных цифр в percent-escape. */
+/** @brief Number of hexadecimal digits in a percent escape. */
 constexpr std::size_t escape_digits = 2;
-/** @brief Основание системы счисления URI escape. */
+/** @brief Radix used for URI escapes. */
 constexpr int hex_base = 16;
 } // namespace
 
@@ -35,7 +35,7 @@ std::string RequestHandler::DecodeURI(const std::string_view target)
                 throw InvalidTarget("Invalid percent escape");
             }
             ch = static_cast<char>(value);
-            /** @brief Число шестнадцатеричных цифр в percent-escape. */
+            /** @brief Number of hexadecimal digits in a percent escape. */
             i += escape_digits;
         }
         else if (ch == '+')

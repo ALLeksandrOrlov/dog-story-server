@@ -14,12 +14,12 @@ namespace json_loader
 namespace json = boost::json;
 namespace
 {
-/** @brief Коэффициент перевода секунд конфигурации в миллисекунды модели. */
+/** @brief Conversion factor from configuration seconds to model milliseconds. */
 constexpr double milliseconds_per_second = 1000.0;
-/** @brief Коэффициент перевода секунд конфигурации в миллисекунды модели. */
+/** @brief Smallest positive configuration interval representable as whole milliseconds. */
 constexpr double minimum_period_seconds = 1.0 / milliseconds_per_second;
 
-/** @brief Читает конечное число JSON независимо от целочисленной или вещественной записи. */
+/** @brief Reads a finite JSON number in either integer or floating-point form. */
 double ReadNumber(const json::value& value)
 {
     if (!value.is_number())
@@ -34,7 +34,7 @@ double ReadNumber(const json::value& value)
     return result;
 }
 
-/** @brief Проверяет тип и диапазон до сужения JSON-целого к int модели. */
+/** @brief Validates type and range before narrowing a JSON integer to the model int type. */
 int ReadInteger(const json::value& value, const std::string_view setting_name,
         const int minimum = std::numeric_limits<int>::min())
 {
@@ -59,7 +59,7 @@ int ReadInteger(const json::value& value, const std::string_view setting_name,
     throw std::invalid_argument(std::string(setting_name) + " must be an integer in the supported range");
 }
 
-/** @brief Переводит положительный период в миллисекунды без переполнения. */
+/** @brief Converts a positive interval to milliseconds without overflow. */
 int ToMilliseconds(const double seconds)
 {
     if (seconds < minimum_period_seconds || seconds > std::numeric_limits<int>::max() / milliseconds_per_second)

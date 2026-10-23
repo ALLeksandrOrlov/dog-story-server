@@ -1,7 +1,7 @@
-# Локальная сборка для разработки
+# Local development build
 
-Нужны компилятор C++20, Python 3.9+, Make и PostgreSQL.
-CI настроен на Ubuntu 22.04.
+Requires a C++20 compiler, Python 3.9+, Make, and PostgreSQL.
+CI runs on Ubuntu 22.04.
 
 ```sh
 python3 -m venv .venv
@@ -15,11 +15,11 @@ cmake --build --preset conan-release -j 4
 ctest --test-dir build/build/Release --output-on-failure
 ```
 
-Зависимости: Boost 1.86, libpqxx 7.7.4, Catch2 3.1.0. CMake закреплён на 3.27.9,
-поскольку сборка этой версии libpqxx использует модуль, удалённый в новых CMake.
-Conan создаёт локальные настройки сборки; `CMakeUserPresets.json` не хранится в Git.
+Dependencies: Boost 1.86, libpqxx 7.7.4, and Catch2 3.1.0. CMake is pinned to 3.27.9
+because this version of libpqxx uses a module removed from newer CMake releases.
+Conan generates local build settings; `CMakeUserPresets.json` is not tracked in Git.
 
-Создайте отдельную базу и пользователя PostgreSQL, затем запустите сервер:
+Create a separate PostgreSQL database and user, then start the server:
 
 ```sh
 export GAME_DB_URL='postgresql://USER:PASSWORD@localhost:5432/DATABASE'
@@ -29,8 +29,8 @@ mkdir -p .cache/state
   --tick-period 50 --state-file .cache/state/game.state --save-state-period 5000
 ```
 
-Сервер слушает порт 8080. Таблица рекордов создаётся при запуске.
-Если убрать `--tick-period`, время продвигается только запросами `POST /api/v1/game/tick`;
-браузерный клиент рассчитан на автоматическое время.
-`--randomize-spawn-points` включает случайную точку появления.
-Все параметры доступны через `--help`.
+The server listens on port 8080. The leaderboard table is created at startup.
+Without `--tick-period`, time advances only through `POST /api/v1/game/tick` requests;
+the browser client expects automatic game time.
+`--randomize-spawn-points` enables random spawn positions.
+Use `--help` to see all options.

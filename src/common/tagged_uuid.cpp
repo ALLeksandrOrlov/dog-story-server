@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Изолирует генерацию и строковый разбор UUID средствами Boost.
+ * @brief Isolates UUID generation and string parsing through Boost.
  */
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/string_generator.hpp>

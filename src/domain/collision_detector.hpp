@@ -7,77 +7,77 @@
 
 namespace collision_detector
 {
-/** @brief Проекция предмета на траекторию собирателя и квадрат расстояния до неё. */
+/** @brief The projection of an item onto a gatherer's path and its squared distance from the path. */
 struct CollectionResult
 {
-    /** @brief Квадрат расстояния предмета до траектории. */
+    /** @brief Squared distance from the item to the path. */
     double sq_distance = 0.0;
-    /** @brief Доля траектории до ближайшей к предмету точки. */
+    /** @brief Fraction of the path to the point closest to the item. */
     double proj_ratio = 0.0;
-    /** @brief Проверяет попадание проекции на отрезок и в заданный радиус захвата. */
+    /** @brief Checks whether the projection lies on the segment and within the collection radius. */
     bool IsCollected(const double collect_radius) const
     {
         return proj_ratio >= 0.0 && proj_ratio <= 1.0 && sq_distance <= collect_radius * collect_radius;
     }
 };
 
-/** @brief Вычисляет проекцию точки c на траекторию от a до b.
- * @pre Концы траектории различаются с учётом машинной погрешности.
- * @throws std::invalid_argument Траектория вырождена.
+/** @brief Projects point c onto the path from a to b.
+ * @pre The path endpoints are distinct after accounting for machine precision.
+ * @throws std::invalid_argument The path is degenerate.
  */
 CollectionResult TryCollectPoint(const geom::Point2D a, const geom::Point2D b, const geom::Point2D c);
 
-/** @brief Неподвижный предмет или офис с радиусом захвата width. */
+/** @brief A stationary item or office with collection radius width. */
 struct Item
 {
-    /** @brief Положение в координатах карты. */
+    /** @brief Position in map coordinates. */
     geom::Point2D position{};
-    /** @brief Радиус захвата в единицах карты. */
+    /** @brief Collection radius in map units. */
     double width = 0.0;
 };
 
-/** @brief Траектория собаки за один шаг с радиусом захвата width. */
+/** @brief A dog's path over one step with collection radius width. */
 struct Gatherer
 {
-    /** @brief Положение собирателя в начале шага. */
+    /** @brief The gatherer's position at the start of the step. */
     geom::Point2D start_pos{};
-    /** @brief Положение собирателя в конце шага. */
+    /** @brief The gatherer's position at the end of the step. */
     geom::Point2D end_pos{};
-    /** @brief Радиус захвата в единицах карты. */
+    /** @brief Collection radius in map units. */
     double width = 0.0;
 };
 
-/** @brief Порт чтения геометрии; алгоритм не зависит от доменных контейнеров. */
+/** @brief Geometry read port; the algorithm is independent of domain containers. */
 class ItemGathererProvider
 {
 public:
-    /** @brief Обеспечивает корректное уничтожение реализации через базовый интерфейс. */
+    /** @brief Enables correct destruction through the base interface. */
     virtual ~ItemGathererProvider() = default;
-    /** @brief Возвращает количество объектов, доступных через GetItem. */
+    /** @brief Returns the number of objects accessible through GetItem. */
     virtual size_t ItemsCount() const = 0;
-    /** @brief Возвращает объект по индексу в диапазоне [0, ItemsCount()). */
+    /** @brief Returns the object at an index in [0, ItemsCount()). */
     virtual Item GetItem(const size_t idx) const = 0;
-    /** @brief Возвращает количество траекторий, доступных через GetGatherer. */
+    /** @brief Returns the number of paths accessible through GetGatherer. */
     virtual size_t GatherersCount() const = 0;
-    /** @brief Возвращает траекторию по индексу в диапазоне [0, GatherersCount()). */
+    /** @brief Returns the path at an index in [0, GatherersCount()). */
     virtual Gatherer GetGatherer(const size_t idx) const = 0;
 };
 
-/** @brief Возможный захват предмета; time — доля шага от 0 до 1. */
+/** @brief A possible item collection; time is the fraction of the step, from 0 to 1. */
 struct GatheringEvent
 {
-    /** @brief Индекс объекта в ItemGathererProvider. */
+    /** @brief Object index in ItemGathererProvider. */
     size_t item_id = 0;
-    /** @brief Индекс собирателя в ItemGathererProvider. */
+    /** @brief Gatherer index in ItemGathererProvider. */
     size_t gatherer_id = 0;
-    /** @brief Квадрат расстояния предмета до траектории. */
+    /** @brief Squared distance from the item to the path. */
     double sq_distance = 0.0;
-    /** @brief Доля шага до события, от 0 до 1. */
+    /** @brief Fraction of the step before the event, from 0 to 1. */
     double time = 0.0;
 };
 
-/** @brief Находит захваты для невырожденных траекторий и сортирует их по времени.
- * @details Не изменяет предметы и не учитывает вместимость сумки: эти правила применяет сессия.
+/** @brief Finds collection events along nondegenerate paths and sorts them by time.
+ * @details Does not modify items or check bag capacity; the session applies these rules.
  */
 std::vector<GatheringEvent> FindGatherEvents(const ItemGathererProvider& provider);
 } // namespace collision_detector

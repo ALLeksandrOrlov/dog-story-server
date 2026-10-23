@@ -9,9 +9,9 @@ namespace app
 using namespace std::literals;
 namespace
 {
-/** @brief Длина генерируемого токена в шестнадцатеричных символах. */
+/** @brief Generated token length in hexadecimal characters. */
 constexpr size_t token_size = 32;
-/** @brief Алфавит шестнадцатеричного представления токена. */
+/** @brief Alphabet used for hexadecimal token encoding. */
 constexpr char hex_digits[] = "0123456789abcdef";
 } // namespace
 

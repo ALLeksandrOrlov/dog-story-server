@@ -22,15 +22,15 @@ namespace logging = boost::log;
 
 namespace
 {
-/** @brief Размер активного файла до ротации; отдельная запись сохраняется целиком. */
+/** @brief Active file size before rotation; individual records are kept intact. */
 constexpr std::size_t rotation_size = 10 * 1024 * 1024;
-/** @brief Максимальное число архивных файлов, не считая активного журнала. */
+/** @brief Maximum number of archived files, excluding the active log. */
 constexpr std::size_t retained_files = 5;
 
 BOOST_LOG_ATTRIBUTE_KEYWORD(additional_data, "AdditionalData", json::value)
 BOOST_LOG_ATTRIBUTE_KEYWORD(timestamp, "TimeStamp", boost::posix_time::ptime)
 
-/** @brief Преобразует атрибуты одной записи Boost.Log в JSON-строку. */
+/** @brief Formats the attributes of a Boost.Log record as a JSON string. */
 void FormatRecord(const logging::record_view& record, logging::formatting_ostream& output)
 {
     json::object map_obj;
@@ -42,7 +42,7 @@ void FormatRecord(const logging::record_view& record, logging::formatting_ostrea
     output << map_obj;
 }
 
-/** @brief Однократно сообщает о сбое необязательного файлового журнала. */
+/** @brief Reports an optional file log failure once. */
 void ReportFileLogFailure()
 {
     static std::once_flag reported;
@@ -54,9 +54,9 @@ void ReportFileLogFailure()
 }
 
 /**
- * @brief Добавляет файловый журнал, если задан GAME_LOG_FILE.
- * @details Файл дописывается после перезапуска; архивы ограничены по числу и размеру.
- * Ошибки необязательного приёмника не прерывают обработку игровых запросов.
+ * @brief Adds a file log when GAME_LOG_FILE is set.
+ * @details Appends to the file after a restart; limits archive count and size.
+ * Failures in the optional sink do not interrupt game request processing.
  */
 void ConfigureFileLog()
 {

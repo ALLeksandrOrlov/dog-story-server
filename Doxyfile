@@ -1,8 +1,8 @@
 # Run from the repository root: doxygen Doxyfile
 PROJECT_NAME           = "Dog Story Server"
-PROJECT_BRIEF          = "C++-сервер многопользовательской игры"
+PROJECT_BRIEF          = "C++ multiplayer game server"
 OUTPUT_DIRECTORY       = build/docs
-OUTPUT_LANGUAGE        = Russian
+OUTPUT_LANGUAGE        = English
 DOXYFILE_ENCODING      = UTF-8
 INPUT_ENCODING         = UTF-8
 INPUT                  = src

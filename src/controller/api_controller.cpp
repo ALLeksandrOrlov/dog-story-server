@@ -9,7 +9,7 @@ namespace http_handler
 using namespace app;
 namespace
 {
-/** @brief Формирует JSON-ответ и явно задаёт длину тела. */
+/** @brief Builds a JSON response with an explicit body length. */
 StringResponse MakeResponse(const StringRequest& request, const http::status status, std::string body,
         const std::string_view allow = {}, const bool no_cache = true)
 {
@@ -27,25 +27,25 @@ StringResponse MakeResponse(const StringRequest& request, const http::status sta
     response.prepare_payload();
     return response;
 }
-/** @brief Сериализует стабильные поля ошибки code и message. */
+/** @brief Serializes the stable error fields code and message. */
 StringResponse MakeErrorResponse(const StringRequest& request, const http::status status, const std::string_view code,
         const std::string_view message, const std::string_view allow = {}, const bool no_cache = true)
 {
     return MakeResponse(
             request, status, json::serialize(json::object{{"code", code}, {"message", message}}), allow, no_cache);
 }
-/** @brief Возвращает HTTP 405 и допустимые методы. */
+/** @brief Returns HTTP 405 and the allowed methods. */
 StringResponse MakeInvalidMethodResponse(
         const StringRequest& request, const std::string_view allow, const std::string_view message = "Invalid method")
 {
     return MakeErrorResponse(request, http::status::method_not_allowed, "invalidMethod", message, allow);
 }
-/** @brief Возвращает HTTP 401 для синтаксически корректного, но неизвестного токена. */
+/** @brief Returns HTTP 401 for a syntactically valid but unknown token. */
 StringResponse MakeUnknownTokenResponse(const StringRequest& request)
 {
     return MakeErrorResponse(request, http::status::unauthorized, "unknownToken", "Player token has not been found");
 }
-/** @brief Разбирает Bearer-заголовок; отсутствие или неверный формат дают nullopt. */
+/** @brief Parses the Bearer header; a missing or malformed value yields nullopt. */
 std::optional<Token> ReadToken(const StringRequest& request)
 {
     const auto value = request.find(http::field::authorization);
@@ -65,13 +65,13 @@ std::optional<Token> ReadToken(const StringRequest& request)
     }
     return token;
 }
-/** @brief Проверяет требуемое контрактом точное значение Content-Type. */
+/** @brief Checks the exact Content-Type required by the contract. */
 bool HasJsonContentType(const StringRequest& request)
 {
     const auto value = request.find(http::field::content_type);
     return value != request.end() && value->value() == "application/json";
 }
-/** @brief Проверяет, разрешён ли метод чтения для маршрута. */
+/** @brief Checks whether the read method is allowed for the route. */
 bool IsReadMethod(const StringRequest& request)
 {
     return request.method() == http::verb::get || request.method() == http::verb::head;

@@ -1,108 +1,108 @@
-# Мониторинг
+# Monitoring
 
-Необязательный профиль Docker Compose добавляет Prometheus, Grafana, Node Exporter и Python-экспортер JSON-журнала.
-Бэкенд записывает события в формате JSON. Экспортер не обращается к игровым объектам, базе данных
-или Docker socket: он получает отдельный том журнала только для чтения.
+An optional Docker Compose profile adds Prometheus, Grafana, Node Exporter, and a Python JSON log exporter.
+The backend writes events as JSON. The exporter does not access game objects, the database,
+or the Docker socket: it receives a separate log volume mounted read-only.
 
-## Запуск
+## Startup
 
-В `.env` должны быть `POSTGRES_PASSWORD` для основного окружения и отдельный `GRAFANA_ADMIN_PASSWORD`.
-Задайте собственные пароли; у Grafana нет пароля по умолчанию в конфигурации проекта. `.env` исключён из Git.
-При необходимости настройте `GAME_HTTP_PORT`, `GRAFANA_PORT` и `PROMETHEUS_PORT`; по умолчанию это 8080, 3000 и 9090.
+Set `POSTGRES_PASSWORD` for the main stack and a separate `GRAFANA_ADMIN_PASSWORD` in `.env`.
+Choose your own passwords; the project configuration has no default Grafana password. `.env` is excluded from Git.
+If needed, set `GAME_HTTP_PORT`, `GRAFANA_PORT`, and `PROMETHEUS_PORT`; the defaults are 8080, 3000, and 9090.
 
 ```sh
 docker compose -f compose.yaml -f compose.monitoring.yaml --profile monitoring up -d --build
 ```
 
-- Игра: <http://localhost:8080>.
-- Grafana: <http://localhost:3000>, пользователь `admin`, пароль из `.env`.
-- Готовая панель: <http://localhost:3000/d/dog-story>.
-- Prometheus и состояние целей: <http://localhost:9090/targets>.
+- Game: <http://localhost:8080>.
+- Grafana: <http://localhost:3000>, username `admin`, password from `.env`.
+- Preconfigured dashboard: <http://localhost:3000/d/dog-story>.
+- Prometheus and target status: <http://localhost:9090/targets>.
 
-Все опубликованные порты привязаны к `127.0.0.1`. Экспортеры доступны только внутри сети Compose.
-Настройки Prometheus и панель Grafana включены в их образы: запуск работает и с Docker daemon в Linux VM,
-когда исходный каталог проекта не смонтирован в виртуальную машину.
+All published ports bind to `127.0.0.1`. Exporters are accessible only within the Compose network.
+The Prometheus configuration and Grafana dashboard are included in their images, so the stack also works with
+a Docker daemon in a Linux VM when the project's source directory is not mounted in that VM.
 
-Остановить всё окружение, сохранив данные:
+Stop the entire stack while preserving data:
 
 ```sh
 docker compose -f compose.yaml -f compose.monitoring.yaml --profile monitoring down
 ```
 
-Остановить только сбор метрик, оставив игру запущенной:
+Stop metric collection only, leaving the game running:
 
 ```sh
 docker compose -f compose.yaml -f compose.monitoring.yaml --profile monitoring stop log-exporter prometheus grafana node-exporter
 ```
 
-Основной `docker compose up -d --build` запускает игру и PostgreSQL без мониторинга. Файл override дополнительно
-включает файловый журнал игры; профиль `monitoring` включает четыре сервиса сбора и отображения метрик.
-Игра зависит только от PostgreSQL: недоступность мониторинга не блокирует её запуск и запросы.
+The standard `docker compose up -d --build` starts the game and PostgreSQL without monitoring. The override file
+also enables the game's file log; the `monitoring` profile enables four services for collecting and displaying metrics.
+The game depends only on PostgreSQL: unavailable monitoring services do not block startup or requests.
 
-## Что показывает панель
+## Dashboard metrics
 
-| Показатель | Источник и смысл |
+| Metric | Source and meaning |
 | --- | --- |
-| Запросы в секунду | `dog_story_http_requests_total{status_class}`; API и статические файлы, классы 1xx–5xx |
-| Средняя задержка и p95 | `dog_story_http_request_duration_seconds`; подготовка ответа до записи в сокет |
-| Доля 4xx и 5xx | Отношение скорости ответов соответствующего класса ко всем ответам |
-| Ошибки обработчика | `dog_story_request_failures_total`; отдельные события `request failed` |
-| Состояние сбора | `up`, `dog_story_log_readable`, ошибки чтения и разбора журнала |
-| CPU, RAM, диск | Node Exporter, системные показатели Linux-хоста Docker |
+| Requests per second | `dog_story_http_requests_total{status_class}`; API and static files, status classes 1xx–5xx |
+| Mean latency and p95 | `dog_story_http_request_duration_seconds`; response preparation before writing to the socket |
+| 4xx and 5xx ratio | Rate of responses in the given class divided by the rate of all responses |
+| Handler failures | `dog_story_request_failures_total`; separate `request failed` events |
+| Collection status | `up`, `dog_story_log_readable`, and log read/parse errors |
+| CPU, RAM, disk | Node Exporter; system metrics from Docker's Linux host |
 
-Задержка имеет исходную точность 1 мс и не включает передачу ответа по сети. p95 оценивается по корзинам гистограммы.
-Prometheus опрашивает экспортеры каждые 5 секунд; для графиков скорости нужно дождаться нескольких опросов.
-При отсутствии запросов график перцентиля может показывать «нет данных» — это не ошибка обработки запросов.
-`up` подтверждает доступность экспортера, а не работоспособность игрового API.
+Latency has a source resolution of 1 ms and excludes network transmission of the response. Histogram buckets estimate p95.
+Prometheus scrapes exporters every 5 seconds; rate charts require several scrapes before data appears.
+With no requests, the percentile chart may show “no data”; this does not indicate a request handling failure.
+`up` confirms exporter availability, not game API health.
 
-Node Exporter читает `/proc`, `/sys` и сведения о файловых системах через read-only mount корня Linux-хоста,
-с отключёнными capabilities. Включены только CPU, память, файловые системы и дисковый IO.
-**На macOS с Docker Desktop или Lima эти показатели относятся к Linux VM, не к физическому Mac.**
-Вложенные mount points должны быть видны в VM; bind propagation `rslave` позволяет получать новые mount points.
+Node Exporter reads `/proc`, `/sys`, and file system information through a read-only mount of the Linux host root,
+with capabilities disabled. Only CPU, memory, file system, and disk I/O collectors are enabled.
+**On macOS with Docker Desktop or Lima, these metrics describe the Linux VM, not the physical Mac.**
+Nested mount points must be visible in the VM; `rslave` bind propagation exposes new mount points.
 
-## Журнал, ротация и перезапуски
+## Logs, rotation, and restarts
 
-`GAME_LOG_FILE=/app/logs/game.log` включает дополнительный синхронный Boost.Log sink. Стандартный JSON-вывод
-сохраняется. Записи сбрасываются после каждого события. Активный файл дописывается при перезапуске игры;
-при достижении 10 MiB он переименовывается в `game.log.00001` и далее. Остаётся до пяти архивов суммарным
-размером до 50 MiB плюс активный файл. Отдельная запись не разрезается, поэтому очень длинное событие может
-превысить порог. Сбой файлового журнала отмечается один раз в stderr и не прерывает игру.
+`GAME_LOG_FILE=/app/logs/game.log` enables an additional synchronous Boost.Log sink. Standard JSON output
+remains enabled. Records are flushed after each event. Restarting the game appends to the active file;
+at 10 MiB, the file is renamed to `game.log.00001`, and so on. Up to five archives totaling
+50 MiB are retained, plus the active file. Individual records are not split, so a very long event may
+exceed the threshold. A file logging failure is reported once to stderr and does not interrupt the game.
 
-Экспортер каждые 250 мс проверяет активный файл и сохранившиеся архивы. Смещение отслеживается по inode,
-поэтому обычная ротация через rename не дублирует записи; дочитываются и несколько архивов между опросами.
-Незавершённая строка ожидает перевода строки, в том числе если UTF-8 символ разделён между записями.
-Повреждённые строки и строки длиннее 64 KiB пропускаются с увеличением `dog_story_log_parse_errors_total`.
-Число меток ограничено пятью классами HTTP-кодов; URL, токены, IP и содержимое запросов в метрики не попадают.
+The exporter checks the active file and retained archives every 250 ms. It tracks offsets by inode,
+so normal rename-based rotation does not duplicate records; it also drains multiple archives created between polls.
+An incomplete line waits for a newline, including when a UTF-8 character is split across writes.
+Malformed lines and lines longer than 64 KiB are skipped and increment `dog_story_log_parse_errors_total`.
+Labels are limited to five HTTP status classes; URLs, tokens, IP addresses, and request contents are not included in metrics.
 
-Счётчики находятся в памяти экспортера. Перезапуск игры их не сбрасывает. При старте экспортера уже существующая
-история пропускается, чтобы не изображать старые запросы как новый всплеск нагрузки. Перезапуск экспортера сбрасывает
-счётчики; `rate()`/`increase()` в Prometheus учитывают такие сбросы. Запросы, записанные до запуска экспортера или
-во время его остановки, не восстанавливаются. Это оперативные метрики, не журнал аудита и не точный биллинг.
-Если чтение сильно отстаёт от записи и архив уже удалён по лимиту хранения, его непрочитанные события также теряются.
-Внешняя ротация через `copytruncate` не используется: поддерживается штатный rename Boost.Log.
+Counters live in exporter memory. Restarting the game does not reset them. At startup, the exporter skips existing
+history to avoid presenting old requests as a new traffic spike. Restarting the exporter resets
+counters; Prometheus `rate()`/`increase()` account for these resets. Requests logged before the exporter starts
+or while it is stopped are not recovered. These are operational metrics, not an audit log or precise billing data.
+If reading falls far behind writing and an archive has already been removed by retention limits, its unread events are also lost.
+External `copytruncate` rotation is not used; the exporter supports Boost.Log's built-in rename-based rotation.
 
-Prometheus хранит данные в собственном томе до 7 дней или 1 GB, в зависимости от того, какой предел достигнут раньше.
-Данные Grafana хранятся в отдельном томе. `GRAFANA_ADMIN_PASSWORD` задаёт пароль при первом создании базы Grafana;
-для уже существующего тома пароль меняется в интерфейсе Grafana. `down` сохраняет тома; `down -v` удалит в том числе
-базу игры и снимки, поэтому для обычной остановки его применять не следует.
+Prometheus retains data in its own volume for up to 7 days or 1 GB, whichever limit is reached first.
+Grafana data uses a separate volume. `GRAFANA_ADMIN_PASSWORD` sets the password when Grafana first creates its database;
+for an existing volume, change the password in Grafana's interface. `down` preserves volumes; `down -v` also deletes
+the game database and snapshots, so do not use it for a normal shutdown.
 
-## Проверка и обновление
+## Validation and updates
 
-Сборка экспортера выполняет регрессионные тесты: старые записи, неполные строки, повреждённый JSON, недопустимые
-коды и задержки, ротация, несколько архивов за интервал, перезапуск и ограничение размера строки.
-Сборка Prometheus проверяет конфигурацию через `promtool`.
+The exporter build runs regression tests for old records, incomplete lines, malformed JSON, invalid
+status codes and durations, rotation, multiple archives between polls, restarts, and line length limits.
+The Prometheus build validates its configuration with `promtool`.
 
-Полный работающий профиль проверяется `tools/check_monitoring.py`: передайте
-`GRAFANA_ADMIN_PASSWORD` в окружении процесса. Скрипт читает те же переменные портов
-и проверяет запросы, метрики и источник данных готовой панели.
+Use `tools/check_monitoring.py` to check the complete running profile; pass
+`GRAFANA_ADMIN_PASSWORD` in the process environment. The script reads the same port variables
+and checks requests, metrics, and the preconfigured dashboard's data source.
 
 ```sh
 docker compose -f compose.yaml -f compose.monitoring.yaml --profile monitoring build log-exporter prometheus
 ```
 
-Версии закреплены по официальным выпускам: [Prometheus 3.15.0](https://github.com/prometheus/prometheus/releases/tag/v3.15.0),
+Versions are pinned to official releases: [Prometheus 3.15.0](https://github.com/prometheus/prometheus/releases/tag/v3.15.0),
 [Grafana 13.2.3](https://grafana.com/grafana/download/13.2.3),
 [Node Exporter 1.12.1](https://github.com/prometheus/node_exporter/releases/tag/v1.12.1),
 [Python 3.13.16](https://github.com/docker-library/official-images/blob/master/library/python),
-[клиент Prometheus 0.26.0](https://pypi.org/project/prometheus-client/0.26.0/).
-После изменения версии или конфигурации пересоберите профиль и проверьте `/targets` и готовую панель.
+[Prometheus client 0.26.0](https://pypi.org/project/prometheus-client/0.26.0/).
+After changing a version or configuration, rebuild the profile and check `/targets` and the preconfigured dashboard.

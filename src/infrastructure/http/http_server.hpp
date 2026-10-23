@@ -26,38 +26,38 @@ namespace http = beast::http;
 namespace sys = boost::system;
 namespace json = boost::json;
 
-/** @brief Записывает код и место сетевой ошибки в структурированный журнал. */
+/** @brief Writes the network error code and operation to the structured log. */
 void ReportError(const beast::error_code error, const std::string_view operation);
 
 /**
- * @brief Владеет TCP-соединением и последовательно читает запросы и отправляет ответы.
- * @details Все операции сокета выполняются на его strand. Асинхронные обработчики
- * удерживают shared_ptr, поэтому соединение живёт до завершения последней операции.
+ * @brief Owns a TCP connection and reads requests and sends responses sequentially.
+ * @details All socket operations run on its strand. Asynchronous handlers
+ * retain a shared_ptr, keeping the connection alive until the last operation completes.
  */
 class SessionBase
 {
 public:
-    /** @brief Сессия имеет единственного логического владельца сокета. */
+    /** @brief The session is the sole logical owner of the socket. */
     SessionBase(const SessionBase&) = delete;
-    /** @brief Перемещение запрещено после привязки асинхронных обработчиков. */
+    /** @brief Disables moves once asynchronous handlers have been bound. */
     SessionBase(SessionBase&&) = delete;
-    /** @brief Копирование сокета запрещено. */
+    /** @brief Disables copying the socket. */
     SessionBase& operator=(const SessionBase&) = delete;
-    /** @brief Перенос активных обработчиков запрещён. */
+    /** @brief Disables moving active handlers. */
     SessionBase& operator=(SessionBase&&) = delete;
-    /** @brief Планирует первое чтение на исполнителе сокета. */
+    /** @brief Schedules the first read on the socket executor. */
     void Run();
 
 protected:
-    /** @brief HTTP-запрос с текстовым телом для передачи прикладному обработчику. */
+    /** @brief HTTP request with a text body passed to the application handler. */
     using HttpRequest = http::request<http::string_body>;
 
-    /** @brief Принимает владение сокетом, уже связанным со своим strand. */
+    /** @brief Takes ownership of a socket already bound to its own strand. */
     explicit SessionBase(tcp::socket&& socket);
-    /** @brief Освобождает сетевые ресурсы при уничтожении конкретной сессии. */
+    /** @brief Releases network resources when the concrete session is destroyed. */
     virtual ~SessionBase() = default;
 
-    /** @brief Удерживает тело ответа в памяти и отправляет его на исполнителе сокета. */
+    /** @brief Keeps the response body alive and sends it on the socket executor. */
     template <typename Body, typename Fields> void Write(http::response<Body, Fields>&& response)
     {
         const auto saved_response = std::make_shared<http::response<Body, Fields>>(std::move(response));
@@ -73,37 +73,37 @@ protected:
                 });
     }
 
-    /** @brief Владеющий TCP-поток с таймаутом; доступ выполняется только на его strand. */
+    /** @brief Owned TCP stream with a timeout; accessed only on its strand. */
     beast::tcp_stream m_stream;
 
 private:
-    /** @brief Максимальное ожидание чтения одного HTTP-запроса. */
+    /** @brief Maximum time allowed to read one HTTP request. */
     static constexpr auto m_request_timeout = std::chrono::seconds(30);
-    /** @brief Непотреблённые байты соединения, в том числе начало следующего запроса. */
+    /** @brief Unconsumed connection bytes, including the beginning of the next request. */
     beast::flat_buffer m_buffer;
-    /** @brief Текущий запрос до передачи обработчику приложения. */
+    /** @brief Current request before transfer to the application handler. */
     HttpRequest m_request;
 
-    /** @brief Начинает чтение следующего HTTP-запроса с ограничением времени. */
+    /** @brief Starts reading the next HTTP request with a time limit. */
     void Read();
-    /** @brief Передаёт полный запрос адаптеру либо завершает соединение при сетевой ошибке. */
+    /** @brief Passes a complete request to the adapter or ends the connection on a network error. */
     void OnRead(const beast::error_code error, [[maybe_unused]] const std::size_t bytes_read);
-    /** @brief Завершает отправку данных в TCP-соединении. */
+    /** @brief Shuts down the sending side of the TCP connection. */
     void Close();
-    /** @brief Передаёт владение запросом конкретному обработчику приложения. */
+    /** @brief Transfers request ownership to the concrete application handler. */
     virtual void HandleRequest(HttpRequest&& request) = 0;
-    /** @brief Возвращает владеющую ссылку для продолжения асинхронной операции. */
+    /** @brief Returns an owning reference to continue an asynchronous operation. */
     virtual std::shared_ptr<SessionBase> GetSharedThis() = 0;
-    /** @brief После ответа закрывает соединение либо начинает следующее чтение. */
+    /** @brief Closes the connection or starts the next read after a response. */
     void OnWrite(const bool close, const beast::error_code error, [[maybe_unused]] const std::size_t bytes_written);
 };
 
-/** @brief Связывает жизненный цикл HTTP-соединения с обработчиком запросов и журналированием. */
+/** @brief Connects the HTTP connection lifecycle to request handling and logging. */
 template <typename RequestHandler>
 class Session : public SessionBase, public std::enable_shared_from_this<Session<RequestHandler>>
 {
 public:
-    /** @brief Принимает сокет и сохраняет обработчик запросов по значению. */
+    /** @brief Accepts a socket and stores the request handler by value. */
     template <typename Handler>
     Session(tcp::socket&& socket, Handler&& request_handler):
             SessionBase(std::move(socket)),
@@ -112,16 +112,16 @@ public:
     }
 
 private:
-    /** @brief Сохранённый по значению обработчик передачи запроса прикладному слою. */
+    /** @brief Handler stored by value for passing requests to the application layer. */
     RequestHandler m_request_handler;
 
-    /** @brief Продлевает жизнь сессии до завершения сетевой операции. */
+    /** @brief Keeps the session alive until the network operation completes. */
     std::shared_ptr<SessionBase> GetSharedThis() override
     {
         return this->shared_from_this();
     }
 
-    /** @brief Измеряет время обработки и передаёт ответ в очередь отправки сокета. */
+    /** @brief Measures processing time and queues the response on the socket executor. */
     void HandleRequest(HttpRequest&& request) override
     {
         const auto remote_endpoint = m_stream.socket().remote_endpoint();
@@ -145,13 +145,13 @@ private:
 };
 
 /**
- * @brief Принимает TCP-соединения и создаёт для каждого отдельную HTTP-сессию.
- * @details Ошибки приёма повторяются после задержки; отмена при остановке не запускает приём заново.
+ * @brief Accepts TCP connections and creates a separate HTTP session for each.
+ * @details Retries failed accepts after a delay; cancellation during shutdown does not restart acceptance.
  */
 template <typename RequestHandler> class Listener : public std::enable_shared_from_this<Listener<RequestHandler>>
 {
 public:
-    /** @brief Открывает endpoint и сохраняет обработчик; ошибки привязки завершают запуск. */
+    /** @brief Opens the endpoint and stores the handler; bind errors abort startup. */
     template <typename Handler>
     Listener(net::io_context& context, const tcp::endpoint& endpoint, Handler&& request_handler):
             m_context(context),
@@ -165,7 +165,7 @@ public:
         m_acceptor.listen(net::socket_base::max_listen_connections);
     }
 
-    /** @brief Запускает приём на strand слушателя; вызывается один раз после создания shared_ptr. */
+    /** @brief Starts accepting on the listener strand; called once after shared_ptr creation. */
     void Run()
     {
         net::dispatch(m_acceptor.get_executor(),
@@ -176,25 +176,25 @@ public:
     }
 
 private:
-    /** @brief Пауза между неуспешными попытками приёма, предотвращающая горячий цикл. */
+    /** @brief Delay between failed accept attempts to prevent a busy loop. */
     static constexpr auto m_retry_delay = std::chrono::milliseconds(100);
-    /** @brief Заимствованный контекст исполнения, переживающий слушатель и сессии. */
+    /** @brief Borrowed execution context that outlives the listener and sessions. */
     net::io_context& m_context;
-    /** @brief Владеющий принимающий сокет со своим последовательным исполнителем. */
+    /** @brief Owned acceptor socket with its own sequential executor. */
     tcp::acceptor m_acceptor;
-    /** @brief Таймер повторного приёма после ошибки; использует strand слушателя. */
+    /** @brief Timer for retrying a failed accept; uses the listener strand. */
     net::steady_timer m_retry_timer;
-    /** @brief Сохранённый по значению обработчик передачи запроса прикладному слою. */
+    /** @brief Handler stored by value for passing requests to the application layer. */
     RequestHandler m_request_handler;
 
-    /** @brief Принимает один сокет, выделяя ему отдельный strand. */
+    /** @brief Accepts one socket, assigning it a separate strand. */
     void AcceptNext()
     {
         m_acceptor.async_accept(
                 net::make_strand(m_context), beast::bind_front_handler(&Listener::OnAccept, this->shared_from_this()));
     }
 
-    /** @brief После временной ошибки откладывает следующую попытку, исключая горячий цикл. */
+    /** @brief Delays the next attempt after a transient error to prevent a busy loop. */
     void RetryAccept()
     {
         m_retry_timer.expires_after(m_retry_delay);
@@ -208,7 +208,7 @@ private:
                 });
     }
 
-    /** @brief Создаёт сессию; после ошибки сохраняет работоспособность слушателя. */
+    /** @brief Creates a session; keeps the listener operational after an error. */
     void OnAccept(const sys::error_code error, tcp::socket socket)
     {
         if (error)
@@ -225,7 +225,7 @@ private:
     }
 };
 
-/** @brief Создаёт самоподдерживающийся слушатель; context должен пережить все сетевые операции. */
+/** @brief Creates a listener that manages its own lifetime; context must outlive all network operations. */
 template <typename RequestHandler>
 void ServeHttp(net::io_context& context, const tcp::endpoint& endpoint, RequestHandler&& handler)
 {

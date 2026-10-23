@@ -6,33 +6,33 @@
 namespace view
 {
 /**
- * @brief Преобразует значения прикладного слоя в публичный формат JSON.
- * @details Каталог описаний карт копируется из конфигурации один раз и далее неизменяем.
- * Он содержит клиентские метаданные (модели и цвета), которые не нужны доменным алгоритмам.
- * Представление не обращается к изменяемой игре или базе данных.
+ * @brief Converts application values to the public JSON format.
+ * @details The map description catalog is copied from configuration once and then remains immutable.
+ * It contains client metadata (models and colors) that domain algorithms do not need.
+ * The view does not access mutable game state or the database.
  */
 class JsonView
 {
 public:
-    /** @brief Копирует описания карт из проверенной конфигурации; исходный JSON не заимствуется. */
+    /** @brief Copies map descriptions from validated configuration without borrowing the source JSON. */
     explicit JsonView(const boost::json::value& config);
-    /** @brief Возвращает массив идентификаторов и названий карт. */
+    /** @brief Returns an array of map identifiers and names. */
     boost::json::array Render(const app::GetMapsResult& result) const;
-    /** @brief Возвращает описание карты, включая визуальные свойства предметов.
-     * @throws std::out_of_range Идентификатор отсутствует в каталоге описаний.
+    /** @brief Returns a map description, including item appearance properties.
+     * @throws std::out_of_range The identifier is absent from the description catalog.
      */
     boost::json::object Render(const app::GetMapDescResult& result) const;
-    /** @brief Возвращает authToken и playerId новой сессии игрока. */
+    /** @brief Returns authToken and playerId for the new player session. */
     boost::json::object Render(const app::JoinGameResult& result) const;
-    /** @brief Возвращает объект с именами игроков, индексированный строковым ID. */
+    /** @brief Returns an object of player names indexed by string IDs. */
     boost::json::object Render(const app::GetPlayersListResult& result) const;
-    /** @brief Сериализует положение, скорость, сумку, очки и свободные предметы. */
+    /** @brief Serializes positions, velocities, bags, scores, and uncollected items. */
     boost::json::object Render(const app::GetGameStateResult& result) const;
-    /** @brief Возвращает рекорды с переводом play_time_ms в секунды. */
+    /** @brief Returns leaderboard records with play_time_ms converted to seconds. */
     boost::json::array Render(const app::GetGameRecordsResult& result) const;
 
 private:
-    /** @brief Неизменяемые клиентские описания карт, индексированные ID. */
+    /** @brief Immutable client map descriptions indexed by ID. */
     std::unordered_map<std::string, boost::json::object> m_map_descriptions;
 };
 } // namespace view

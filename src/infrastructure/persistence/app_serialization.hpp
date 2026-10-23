@@ -8,14 +8,14 @@
 namespace serialization
 {
 
-/** @brief Сохраняет связь токена игрока с картой и собакой через идентификаторы. */
+/** @brief Stores the association between a player token, map, and dog using identifiers. */
 class PlayerRepr
 {
 public:
-    /** @brief Инициализирует поля перед чтением архива. */
+    /** @brief Initializes fields before reading the archive. */
     PlayerRepr() = default;
 
-    /** @brief Копирует идентификаторы игрока без адресов объектов игрового мира. */
+    /** @brief Copies player identifiers without storing game world object addresses. */
     explicit PlayerRepr(const app::Player& player):
             m_id(player.GetId()),
             m_token(player.GetToken()),
@@ -25,8 +25,8 @@ public:
     }
 
     /**
-     * @brief Восстанавливает игрока после загрузки игровых сессий.
-     * @throws std::runtime_error Если сессия или собака отсутствует в переданной игре.
+     * @brief Restores a player after loading game sessions.
+     * @throws std::runtime_error If the session or dog is missing from the supplied game.
      */
     app::Player Restore(const model::Game& game) const
     {
@@ -43,38 +43,38 @@ public:
         return {m_id, m_token, session, std::move(dog)};
     }
 
-    /** @brief Сериализует поля в порядке архивного формата; имя требуется Boost.Serialization. */
+    /** @brief Serializes fields in archive order; the name is required by Boost.Serialization. */
     template <typename Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned version)
     {
-        /** @brief Идентификатор игрока, уникальный в пределах игры. */
+        /** @brief Player identifier, unique within the game. */
         ar&* m_id;
-        /** @brief Секрет авторизации, сохраняемый для продолжения сессии после перезапуска. */
+        /** @brief Authorization secret saved to resume the session after a restart. */
         ar&* m_token;
-        /** @brief Идентификатор карты, по которому восстанавливается ссылка на сессию. */
+        /** @brief Map identifier used to restore the session reference. */
         ar&* m_map_id;
-        /** @brief Идентификатор собаки внутри восстановленной сессии. */
+        /** @brief Dog identifier within the restored session. */
         ar&* m_dog_id;
     }
 
 private:
-    /** @brief Идентификатор игрока, уникальный в пределах игры. */
+    /** @brief Player identifier, unique within the game. */
     app::Player::Id m_id{0};
-    /** @brief Секрет авторизации, сохраняемый для продолжения сессии после перезапуска. */
+    /** @brief Authorization secret saved to resume the session after a restart. */
     app::Token m_token{""};
-    /** @brief Идентификатор карты, по которому восстанавливается ссылка на сессию. */
+    /** @brief Map identifier used to restore the session reference. */
     model::Map::Id m_map_id{""};
-    /** @brief Идентификатор собаки внутри восстановленной сессии. */
+    /** @brief Dog identifier within the restored session. */
     model::Dog::Id m_dog_id{0};
 };
 
-/** @brief Снимок реестра игроков, восстанавливаемый после игрового мира. */
+/** @brief Player registry snapshot restored after the game world. */
 class PlayersRepr
 {
 public:
-    /** @brief Создаёт пустой реестр для чтения из архива. */
+    /** @brief Creates an empty registry for archive loading. */
     PlayersRepr() = default;
 
-    /** @brief Копирует связи всех зарегистрированных игроков. */
+    /** @brief Copies the associations of all registered players. */
     explicit PlayersRepr(const app::Players& players)
     {
         const auto players_list = players.GetPlayersList();
@@ -84,7 +84,7 @@ public:
         }
     }
 
-    /** @brief Собирает отдельный реестр, проверяя ссылки и уникальность идентификаторов. */
+    /** @brief Builds a separate registry, validating references and identifier uniqueness. */
     app::Players Restore(const model::Game& game) const
     {
         app::Players players;
@@ -95,15 +95,15 @@ public:
         return players;
     }
 
-    /** @brief Сериализует поля в порядке архивного формата; имя требуется Boost.Serialization. */
+    /** @brief Serializes fields in archive order; the name is required by Boost.Serialization. */
     template <typename Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned version)
     {
-        /** @brief Архивные связи всех зарегистрированных игроков. */
+        /** @brief Archived associations of all registered players. */
         ar & m_players;
     }
 
 private:
-    /** @brief Архивные связи всех зарегистрированных игроков. */
+    /** @brief Archived associations of all registered players. */
     std::vector<PlayerRepr> m_players;
 };
 

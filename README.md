@@ -1,132 +1,134 @@
-# Dog Story — игровой сервер на C++
+# Dog Story — C++ Game Server
 
-[Запуск](#быстрый-запуск) · [Архитектура](#структура) · [API](docs/api.md) · [Проверки](docs/validation.md)
+[Quick start](#quick-start) · [Architecture](#structure) · [API](docs/api.md) · [Tests](docs/validation.md)
 
-Многопользовательская игра о собаках, которые собирают предметы. Игроки перемещаются по дорогам,
-подбирают предметы и сдают их в пункты доставки. Сервер рассчитывает движение,
-столкновения и очки; PostgreSQL хранит таблицу завершённых сессий.
+A multiplayer game about dogs collecting items. Players travel along roads,
+pick up items, and take them to delivery points. The server calculates movement,
+collisions, and scores; PostgreSQL stores the leaderboard of completed games.
 
-Бэкенд написан на C++20. В комплекте — браузерный клиент на Three.js и три карты.
-Результаты игр сохраняются в PostgreSQL через Repository, а активные сессии
-восстанавливаются из файловых снимков.
+The backend is written in C++20. It includes a Three.js browser client and three maps.
+Game results are stored in PostgreSQL through a repository, while active sessions
+are restored from file snapshots.
 
-## Скриншоты
+## Screenshots
 
-| Вход и выбор карты | Игра на Map 3 |
+| Login and map selection | Playing on Map 3 |
 | --- | --- |
-| ![Экран входа и выбора карты](docs/images/login.jpg) | ![Игровое поле Map 3](docs/images/gameplay.jpg) |
+| ![Login and map selection screen](docs/images/login.jpg) | ![Map 3 game world](docs/images/gameplay.jpg) |
 
-## Возможности
+## Features
 
-- REST API для карт, подключения, движения, состояния и рекордов.
-- Изоляция игроков по игровым сессиям.
-- Ручное и автоматическое игровое время.
-- Периодические снимки состояния и восстановление после перезапуска.
-- Асинхронный HTTP на Boost.Beast / Asio; последовательная обработка игровой логики через strand.
-- Структурированные JSON-логи запросов и ответов.
+- REST API for maps, joining games, movement, state, and records.
+- Players isolated by game session.
+- Manual and automatic game time.
+- Periodic state snapshots and recovery after a restart.
+- Asynchronous HTTP with Boost.Beast / Asio; game logic serialized through a strand.
+- Structured JSON request and response logs.
 
-## Быстрый запуск
+## Quick start
 
-Нужны Docker и Docker Compose:
+Requires Docker and Docker Compose:
 
 ```sh
 cp .env.example .env
-# Укажите собственный URL-safe пароль в POSTGRES_PASSWORD.
+# Set your own URL-safe POSTGRES_PASSWORD.
 docker compose up -d --build
 ```
 
-Откройте [localhost:8080](http://localhost:8080), введите имя и выберите карту.
-Неактивный игрок завершает сессию через 15 секунд при настройках по умолчанию;
-его результат появляется в таблице рекордов.
+Open [localhost:8080](http://localhost:8080), enter a name, and select a map.
+With the default settings, an inactive player leaves the game after 15 seconds;
+their result then appears on the leaderboard.
 
-PostgreSQL доступен только внутри сети Compose. Данные базы и снимки состояния
-хранятся в отдельных томах. Остановка: `docker compose down`.
+PostgreSQL is accessible only within the Compose network. Database data and state
+snapshots use separate volumes. Stop the services with `docker compose down`.
 
 ## Docker
 
-[Подробности развёртывания и проверок](docs/docker.md).
+[Deployment and testing details](docs/docker.md).
 
-Сборка и запуск сервера и PostgreSQL:
+Build and start the server and PostgreSQL:
 
 ```sh
 docker compose up -d --build
 ```
 
-Проверка состояния и журнала:
+Check service status and logs:
 
 ```sh
 docker compose ps
 docker compose logs -f game
 ```
 
-Остановка с сохранением данных: `docker compose down`. Повторный запуск использует
-те же тома базы и снимков. Пароль в `.env` должен оставаться прежним для существующей
-базы; этот файл не попадает в Git и образ. `GAME_HTTP_PORT` позволяет выбрать другой
-локальный порт, например `GAME_HTTP_PORT=8081 docker compose up -d`.
+Stop the services while preserving data with `docker compose down`. Starting them
+again reuses the same database and snapshot volumes. Keep the password in `.env`
+unchanged for an existing database; this file is excluded from Git and the image.
+Use `GAME_HTTP_PORT` to choose a different local port, for example
+`GAME_HTTP_PORT=8081 docker compose up -d`.
 
-Образ можно собрать отдельно:
+You can also build the image separately:
 
 ```sh
 docker build -t dog-story:local .
 ```
 
-Его точка входа запускает `/app/game_server` с конфигурацией `/app/data/config.json`
-и клиентом `/app/static`. Для самостоятельного `docker run` нужно передать
-`GAME_DB_URL` доступной из контейнера PostgreSQL и опубликовать порт 8080.
-По умолчанию включены автоматическое время и снимки в `/app/state`.
+Its entry point runs `/app/game_server` with the configuration at `/app/data/config.json`
+and the client at `/app/static`. A standalone `docker run` requires `GAME_DB_URL`
+pointing to a PostgreSQL instance accessible from the container and port 8080 published.
+Automatic game time and snapshots in `/app/state` are enabled by default.
 
-Сборка выполняется внутри Docker в отдельном этапе, включая CTest. Итоговый образ
-содержит исполняемый файл, конфигурацию, клиент и лицензии, работает от непривилегированного
-пользователя. Компилятор и Conan на хосте для развёртывания не нужны.
+The application is built in a separate Docker stage, which also runs CTest. The final
+image contains the executable, configuration, client, and licenses, and runs as an
+unprivileged user. Deployment does not require a compiler or Conan on the host.
 
-Для разработки доступна [локальная сборка C++](docs/development.md).
-Развёртывание выполняется через Docker.
+A [local C++ build](docs/development.md) is available for development.
+Use Docker for deployment.
 
-Для наблюдения за запросами и ресурсами доступен [профиль мониторинга](docs/monitoring.md)
-с Prometheus, Grafana и готовой панелью. Основной запуск не требует этих сервисов.
+An optional [monitoring profile](docs/monitoring.md) provides Prometheus, Grafana,
+and a preconfigured dashboard for requests and resource usage. The main stack does
+not require these services.
 
-## Структура
+## Structure
 
-| Каталог | Ответственность |
+| Directory | Responsibility |
 | --- | --- |
-| `src/domain` | Карты, игроки-собаки, сессии, движение, сбор предметов и очки |
-| `src/application` | Вход в игру, токены, команды, запросы и завершение сессий |
-| `src/controller` | Маршрутизация, HTTP-валидация, API и статические файлы |
-| `src/view` | Преобразование результатов операций в JSON |
-| `src/infrastructure` | HTTP-транспорт, конфигурация, PostgreSQL, снимки и логи |
-| `src/bootstrap` | Параметры запуска; `main.cpp` связывает компоненты |
-| `static` | Браузерный клиент Dog Story, библиотеки и 3D-модели |
+| `src/domain` | Maps, player dogs, sessions, movement, item collection, and scores |
+| `src/application` | Joining games, tokens, commands, queries, and player retirement |
+| `src/controller` | Routing, HTTP validation, API, and static files |
+| `src/view` | Converting operation results to JSON |
+| `src/infrastructure` | HTTP transport, configuration, PostgreSQL, snapshots, and logs |
+| `src/bootstrap` | Startup options; `main.cpp` wires the components together |
+| `static` | Dog Story browser client, libraries, and 3D models |
 
-В серверной интерпретации MVC модель — это домен и прикладные операции,
-представление — JSON, контроллер — HTTP API. Подробности:
-[архитектура](docs/architecture.md), [API](docs/api.md), [проверки](docs/validation.md).
+In this server-side MVC design, the model consists of the domain and application
+operations, the view is JSON, and the controller is the HTTP API. See the
+[architecture](docs/architecture.md), [API](docs/api.md), and [testing](docs/validation.md) documentation.
 
-## Разработка
+## Development
 
-Правила C++ описаны в [кодстайле](docs/codestyle.md) и проверяются автоматически.
-C++-заголовки имеют расширение `.hpp`; пространства имён группируют компоненты
-по назначению. Комментарии Doxygen описывают назначение, владение объектами
-и ограничения методов.
+C++ conventions are described in the [style guide](docs/codestyle.md) and checked
+automatically. C++ headers use the `.hpp` extension; namespaces group components
+by purpose. Doxygen comments describe responsibilities, object ownership, and
+method constraints.
 
 ```sh
-python3 tools/check_style.py        # Проверить единый стиль C++
-python3 tools/check_style.py --fix  # Применить форматирование
+python3 tools/check_style.py        # Check C++ style
+python3 tools/check_style.py --fix  # Apply formatting
 python3 tools/verify_original_tests.py
 ```
 
-Тесты покрывают генерацию предметов, столкновения, игровые сессии, границы слоёв,
-сохранение и восстановление состояния, HTTP API. Интеграционные сценарии запускаются
-с PostgreSQL в Docker; инструкции приведены в [документации](docs/docker.md).
+Tests cover item generation, collisions, game sessions, layer boundaries,
+state persistence and recovery, and the HTTP API. Integration scenarios run with
+PostgreSQL in Docker; see the [instructions](docs/docker.md).
 
-Doxygen-документация проверяется при сборке Docker-образа. При локальной сборке
-с установленным Doxygen: `cmake --build build/build/Release --target docs`.
-HTML появляется в `build/docs/html/index.html`.
+Doxygen documentation is checked when building the Docker image. For a local build
+with Doxygen installed, run `cmake --build build/build/Release --target docs`.
+HTML output is written to `build/docs/html/index.html`.
 
-## Сохранение состояния
+## State persistence
 
-Снимки содержат положение, направление, сумку, очки и токены игроков.
-Текущая скорость и счётчики времени сбрасываются при восстановлении:
-для продолжения движения клиент должен отправить новую команду.
-Результаты завершённых сессий хранятся отдельно в PostgreSQL.
+Snapshots contain player positions, directions, bags, scores, and tokens.
+Current velocity and time counters are reset during recovery:
+the client must send a new command to resume movement.
+Completed game results are stored separately in PostgreSQL.
 
-Сведения о правах на сторонние компоненты: [NOTICE](NOTICE).
+Third-party notices: [NOTICE](NOTICE).

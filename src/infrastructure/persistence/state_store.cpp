@@ -86,7 +86,7 @@ void StateStore::OnTick(const int delta_ms, const model::Game& game, const app::
         throw std::invalid_argument("Snapshot time delta must be nonnegative");
     }
     m_elapsed += std::chrono::milliseconds(delta_ms);
-    // Снимок записывается после превышения заданного периода.
+    // Save the snapshot once the configured interval is exceeded.
     if ((m_elapsed - m_last_save).count() > *m_period_ms)
     {
         Save(game, players);

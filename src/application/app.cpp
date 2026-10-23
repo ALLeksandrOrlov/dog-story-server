@@ -9,7 +9,7 @@ namespace app
 using namespace std::literals;
 namespace
 {
-/** @brief Длина токена авторизации в шестнадцатеричных символах. */
+/** @brief Authorization token length in hexadecimal characters. */
 constexpr int token_length = 32;
 } // namespace
 

@@ -14,110 +14,110 @@ namespace app
 {
 namespace detail
 {
-/** @brief Разделяет тип токена доступа и обычные строки на этапе компиляции. */
+/** @brief Distinguishes access tokens from ordinary strings at compile time. */
 struct TokenTag
 {
 };
 } // namespace detail
 
-/** @brief Секрет авторизации; отдельный тип предотвращает смешение с обычными строками. */
+/** @brief Authorization secret; a distinct type prevents mixing it with ordinary strings. */
 using Token = util::Tagged<std::string, detail::TokenTag>;
 
 using model::Dog;
 using model::GameSession;
 
-/** @brief Создаёт токены доступа непосредственно из системного источника случайности.
- * @details На поддерживаемых Linux/macOS std::random_device использует источник ОС.
- * Промежуточный PRNG с коротким seed не применяется.
+/** @brief Creates access tokens directly from the operating system's random source.
+ * @details On supported Linux/macOS systems, std::random_device uses the OS source.
+ * No intermediate PRNG with a short seed is used.
  */
 class RandomToken
 {
 public:
-    /** @brief Запрещает создание экземпляров утилиты без состояния. */
+    /** @brief Prevents instantiation of this stateless utility. */
     RandomToken() = delete;
-    /** @brief Возвращает 32 шестнадцатеричных символа; ошибку источника передаёт вызывающему коду. */
+    /** @brief Returns 32 hexadecimal characters; propagates random source failures to the caller. */
     static Token Generate();
 };
 
-/** @brief Связывает авторизацию игрока с собакой и сессией.
- * @details Удерживает собаку через shared_ptr, но сессией не владеет. Сессия
- * обязана пережить игрока; реестр Players проверяет принадлежность собаки сессии.
+/** @brief Associates player authorization with a dog and a session.
+ * @details Retains the dog through shared_ptr but does not own the session. The session
+ * must outlive the player; the Players registry validates the dog's session membership.
  */
 class Player
 {
 public:
-    /** @brief Строго типизированный идентификатор сущности. */
+    /** @brief Strongly typed entity identifier. */
     using Id = util::Tagged<std::uint32_t, Player>;
-    /** @brief Создаёт запись для последующей проверяемой регистрации в Players. */
+    /** @brief Creates a record for subsequent validated registration in Players. */
     Player(const Id id, const Token& token, GameSession* session, const GameSession::DogPtr& dog);
-    /** @brief Возвращает уникальный в игре идентификатор игрока. */
+    /** @brief Returns the player's identifier, unique across the game. */
     const Id& GetId() const noexcept;
-    /** @brief Преобразует идентификатор в десятичный ключ ответа. */
+    /** @brief Converts the identifier to a decimal response key. */
     std::string GetIdAsString() const;
-    /** @brief Возвращает секрет авторизации, действующий до удаления регистрации. */
+    /** @brief Returns the authorization secret, valid until registration is removed. */
     const Token& GetToken() const;
-    /** @brief Возвращает имя связанной собаки. */
+    /** @brief Returns the associated dog's name. */
     std::string GetName() const;
-    /** @brief Возвращает невладеющий указатель на сессию игрока. */
+    /** @brief Returns a borrowed pointer to the player's session. */
     GameSession* GetSession() const;
-    /** @brief Возвращает разделяемую ссылку на собаку игрока. */
+    /** @brief Returns shared ownership of the player's dog. */
     GameSession::DogPtr GetDog() const;
 
 private:
-    /** @brief Идентификатор сущности, не изменяемый после регистрации. */
+    /** @brief Entity identifier that does not change after registration. */
     Id m_id{0};
-    /** @brief Токен доступа связанного игрока. */
+    /** @brief Access token for the associated player. */
     Token m_token{std::string{}};
-    /** @brief Невладеющий указатель на сессию; Game должен пережить игрока. */
+    /** @brief Borrowed session pointer; Game must outlive the player. */
     GameSession* m_session = nullptr;
-    /** @brief Собака, управляемая авторизованным игроком. */
+    /** @brief Dog controlled by the authorized player. */
     GameSession::DogPtr m_dog{};
 };
 
-/** @brief Реестр авторизации и привязок игроков к доменному миру.
- * @details Доступ сериализуется с игровыми действиями. Копирование запрещено,
- * поскольку независимые реестры не должны разделять изменяемых игроков.
+/** @brief Registry of player authorization and associations with the domain world.
+ * @details Access is serialized with game actions. Copying is prohibited because
+ * independent registries must not share mutable players.
  */
 class Players
 {
 public:
-    /** @brief Разделяемое владение зарегистрированным игроком. */
+    /** @brief Shared ownership of a registered player. */
     using PlayerPtr = std::shared_ptr<Player>;
-    /** @brief Создаёт пустой реестр. */
+    /** @brief Creates an empty registry. */
     Players() = default;
-    /** @brief Запрещает неявное разделение игроков между копиями реестра. */
+    /** @brief Prevents implicit sharing of players between registry copies. */
     Players(const Players&) = delete;
-    /** @brief Запрещает копирующее присваивание реестра. */
+    /** @brief Prevents copy assignment of the registry. */
     Players& operator=(const Players&) = delete;
-    /** @brief Переносит реестр с сохранением привязок к сессиям. */
+    /** @brief Moves the registry while preserving session associations. */
     Players(Players&&) = default;
-    /** @brief Переносит реестр; получатель принимает существующие привязки к миру. */
+    /** @brief Moves the registry; the destination takes over existing world associations. */
     Players& operator=(Players&&) = default;
-    /** @brief Атомарно добавляет игрока во все индексы.
-     * @throws std::invalid_argument Повторяется ID/токен/собака либо нарушена привязка к сессии.
+    /** @brief Atomically adds a player to all indexes.
+     * @throws std::invalid_argument The ID, token, or dog is duplicated, or the session association is invalid.
      */
     void AddPlayer(const Player& player);
-    /** @brief Возвращает следующий монотонный идентификатор, не резервируя его. */
+    /** @brief Returns the next monotonic identifier without reserving it. */
     int GetNextPlayerId() const noexcept;
-    /** @brief Ищет авторизованного игрока; nullptr означает неизвестный или отозванный токен. */
+    /** @brief Finds an authorized player; nullptr indicates an unknown or revoked token. */
     PlayerPtr FindByToken(const Token& token) const;
-    /** @brief Создаёт список игроков только указанной сессии. */
+    /** @brief Builds a player list for the specified session only. */
     std::vector<PlayerPtr> GetSessionPlayersList(const GameSession& session) const;
-    /** @brief Предоставляет реестр для создания снимка без возможности его структурного изменения. */
+    /** @brief Exposes the registry for snapshots without allowing structural changes. */
     const std::deque<PlayerPtr>& GetPlayersList() const;
-    /** @brief Удаляет привязку собаки и отзывает токен; отсутствие записи допустимо. */
+    /** @brief Removes the dog's association and revokes the token; a missing entry is allowed. */
     void RemovePlayer(const GameSession::Id session_id, const Dog::Id dog_id);
 
 private:
-    /** @brief Хеширование типизированного токена для индекса авторизации. */
+    /** @brief Hash function for typed tokens in the authorization index. */
     using TokenIdHasher = util::TaggedHasher<Token>;
-    /** @brief Индекс авторизации: токен — зарегистрированный игрок. */
+    /** @brief Authorization index mapping tokens to registered players. */
     using TokenToPlayer = std::unordered_map<Token, PlayerPtr, TokenIdHasher>;
-    /** @brief Реестр зарегистрированных игроков. */
+    /** @brief Registry of registered players. */
     std::deque<PlayerPtr> m_players{};
-    /** @brief Индекс действующих токенов авторизации. */
+    /** @brief Index of active authorization tokens. */
     TokenToPlayer m_token_to_player{};
-    /** @brief Следующий ID игрока; удалённые ID не переиспользуются. */
+    /** @brief Next player ID; removed IDs are not reused. */
     int m_next_player_id = 0;
 };
 } // namespace app

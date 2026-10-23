@@ -30,7 +30,7 @@ namespace json = boost::json;
 
 } // namespace
 
-/** @brief Собирает зависимости, запускает HTTP-обработчики и сохраняет состояние при штатной остановке. */
+/** @brief Wires dependencies, starts HTTP handlers, and saves state on graceful shutdown. */
 int main(const int argc, char* argv[])
 {
     bootstrap::Args args{};
@@ -51,7 +51,7 @@ int main(const int argc, char* argv[])
 
     try
     {
-        // Восстановление выполняется до регистрации обработчиков и открытия HTTP-порта.
+        // Restore state before registering handlers and opening the HTTP port.
         json_loader::JsonLoader loader(args.config_file_path);
         model::Game game = loader.LoadGame();
         app::Players players;
@@ -80,7 +80,7 @@ int main(const int argc, char* argv[])
         const unsigned num_threads = std::max(1U, std::thread::hardware_concurrency());
         net::io_context ioc(num_threads);
 
-        // Штатный сигнал завершает обработчики до последней записи снимка.
+        // A shutdown signal lets handlers finish before the final snapshot is saved.
         net::signal_set signals(ioc, SIGINT, SIGTERM);
         signals.async_wait(
                 [&ioc](const sys::error_code& ec, [[maybe_unused]] const int signal_number)
@@ -92,7 +92,7 @@ int main(const int argc, char* argv[])
                     }
                 });
 
-        // API и таймер разделяют один strand, защищающий домен и соединение с БД.
+        // The API and timer share one strand that protects the domain and database connection.
         auto api_strand = net::make_strand(ioc);
         auto handler =
                 std::make_shared<http_handler::RequestHandler>(args.www_root_path, api_strand, application, json_view,
@@ -123,7 +123,7 @@ int main(const int argc, char* argv[])
             ticker->Start();
         }
 
-        // Событие готовности используется HTTP-проверками и средствами наблюдения за сервером.
+        // HTTP checks and server monitoring use this readiness event.
         logger::PrintLog(json::value({{"port"s, port}, {"address"s, address.to_string()}}), "server started"sv);
 
         http_server::RunWorkers(ioc, num_threads);

@@ -1,22 +1,22 @@
-# Развёртывание через Docker
+# Docker deployment
 
-Основной способ запуска — Docker Compose из корня репозитория.
+Run Docker Compose from the repository root for the standard deployment.
 
-Дополнительные сервисы Prometheus, Grafana и экспорта метрик подключаются через
-отдельный [профиль мониторинга](monitoring.md).
+Optional Prometheus, Grafana, and metric exporter services are available through
+a separate [monitoring profile](monitoring.md).
 
 ```sh
 cp .env.example .env
-# Задайте свой POSTGRES_PASSWORD в .env.
+# Set your own POSTGRES_PASSWORD in .env.
 docker compose up -d --build
 ```
 
-Файл `.env` с локальными настройками исключён из Git и контекста Docker.
+The `.env` file contains local settings and is excluded from Git and the Docker build context.
 
-Compose запускает два сервиса: `game` и `db`. Сначала PostgreSQL должен пройти
-проверку готовности, затем запускается игра. Порт игры опубликован только на
-`127.0.0.1:8080`; порт PostgreSQL наружу не опубликован. Другой порт игры можно
-задать через `GAME_HTTP_PORT`, например `8081`.
+Compose starts two services: `game` and `db`. PostgreSQL must pass its readiness
+check before the game starts. The game port is published only on
+`127.0.0.1:8080`; the PostgreSQL port is not published. Use `GAME_HTTP_PORT`
+to select a different game port, such as `8081`.
 
 ```sh
 docker compose ps
@@ -25,47 +25,47 @@ docker compose restart game
 docker compose down
 ```
 
-Обычный `down` сохраняет тома `database` и `snapshots`. Не добавляйте `-v`, если
-нужно сохранить данные. Не меняйте пароль в `.env` для уже созданной базы без
-соответствующей смены пароля в PostgreSQL.
+A normal `down` preserves the `database` and `snapshots` volumes. Do not add `-v`
+if you need to keep the data. For an existing database, do not change the password
+in `.env` without making the corresponding password change in PostgreSQL.
 
-Образ также собирается обычным `docker build -t dog-story:local .`.
-ENTRYPOINT запускает сервер с конфигурацией и статикой
-из `/app`. Отдельный `docker run` требует адреса PostgreSQL в `GAME_DB_URL`.
-Compose задаёт его автоматически. Параметры по умолчанию включают тик 50 мс,
-периодическое сохранение и финальный снимок при штатном завершении.
+You can also build the image with `docker build -t dog-story:local .`.
+ENTRYPOINT starts the server with the configuration and static files
+under `/app`. A standalone `docker run` requires a PostgreSQL address in `GAME_DB_URL`.
+Compose sets it automatically. The defaults enable a 50 ms tick, periodic saves,
+and a final snapshot on normal shutdown.
 
-В этапе сборки установлены C++20-компилятор, Conan и CMake; выполняется весь CTest.
-Итоговый образ содержит только приложение, клиент, конфигурацию, лицензии и
-необходимые системные библиотеки. Процесс работает с UID/GID 10001.
-Контрольные суммы проверяют целостность набора тестов.
+The build stage installs a C++20 compiler, Conan, and CMake, and runs the full CTest suite.
+The final image contains only the application, client, configuration, licenses, and
+required system libraries. The process runs with UID/GID 10001.
+Checksums verify the integrity of the test suite.
 
-Проверки уже работающего стека:
+Check a running stack:
 
 ```sh
 python3 tests/docker_smoke.py
 python3 tests/client_resource_check.py
 ```
 
-Первый сценарий создаёт тестовых игроков с уникальными именами, проверяет карты,
-движение, авторизацию, завершение с записью в PostgreSQL и дважды перезапускает
-контейнер игры для проверки снимков и рекордов. Используйте его на локальном или
-тестовом стенде. CI собирает и проверяет именно Docker-развёртывание.
+The first scenario creates test players with unique names, checks maps, movement,
+authorization, and retirement with PostgreSQL persistence, and restarts the game
+container twice to verify snapshots and records. Run it on a local or test deployment.
+CI builds and verifies the Docker deployment.
 
-## Полные API-тесты внутри Docker
+## Full API tests in Docker
 
-Отдельный профиль `test` использует этап сборки образа и отдельную базу `game_test`.
-Внутри него выполняются сценарии HTTP, завершения игры, снимков,
-параллельных запросов и загрузки ресурсов клиента.
+The separate `test` profile uses the image's build stage and a dedicated `game_test`
+database. It runs HTTP, retirement, snapshot, concurrent request, and client resource
+loading scenarios.
 
 ```sh
 docker compose up -d db
-# Создать один раз для этого тома PostgreSQL:
+# Create once for this PostgreSQL volume:
 docker compose exec -T db createdb -U game game_test
 docker compose --profile test build test
 docker compose --profile test run --rm test
 ```
 
-Этот профиль не публикует порт игры на хосте и не использует рабочую базу `game`.
-Для повторных тестов можно использовать ту же небольшую тестовую базу; при большом
-числе прогонов старые рекорды могут влиять на проверку первых 100 записей.
+This profile does not publish the game port on the host or use the main `game` database.
+The same small test database can be reused; after many runs, older records may affect
+checks of the first 100 entries.

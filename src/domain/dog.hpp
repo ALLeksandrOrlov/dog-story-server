@@ -12,92 +12,92 @@
 
 namespace model
 {
-/** @brief Отклонённый шаг времени, который нельзя представить без переполнения. */
+/** @brief A rejected time step that cannot be represented without overflow. */
 class InvalidTimeDelta : public std::invalid_argument
 {
 public:
-    /** @brief Передаёт диагностическое сообщение стандартному исключению. */
+    /** @brief Passes the diagnostic message to the standard exception. */
     using std::invalid_argument::invalid_argument;
 };
 
-/** @brief Состояние игровой собаки: движение, сумка, счёт и время жизни.
- * @details При создании собака стоит; сохранённое направление задаёт ориентацию,
- * а не скорость. Это сохраняет контракт восстановления снимков.
+/** @brief A game dog's state: movement, bag, score, and lifetime.
+ * @details A newly created dog is stationary; the stored direction specifies orientation,
+ * not velocity. This preserves the snapshot restoration contract.
  */
 class Dog
 {
 public:
-    /** @brief Строго типизированный идентификатор сущности. */
+    /** @brief A strongly typed entity identifier. */
     using Id = util::Tagged<std::uint32_t, Dog>;
-    /** @brief Создаёт стоящую собаку с указанными параметрами.
-     * @throws std::invalid_argument Позиция/скорость неконечны, направление недопустимо,
-     * либо скорость, вместимость или счёт отрицательны.
+    /** @brief Creates a stationary dog with the specified parameters.
+     * @throws std::invalid_argument Position or speed is nonfinite, direction is invalid,
+     * or speed, capacity, or score is negative.
      */
     Dog(const Id id, const std::string& name, const Position spawn_point, const double abs_speed,
             const std::string& direction, const int bag_capacity, const int score);
-    /** @brief Возвращает идентификатор, уникальный в пределах сессии. */
+    /** @brief Returns the identifier, unique within the session. */
     const Id& GetId() const noexcept;
-    /** @brief Возвращает имя, предоставленное игроком при входе. */
+    /** @brief Returns the name supplied by the player when joining. */
     const std::string& GetName() const noexcept;
-    /** @brief Устанавливает конечные координаты; принадлежность дороге проверяет сессия. */
+    /** @brief Sets finite coordinates; the session checks whether the position is on a road. */
     void SetPosition(const Position position);
-    /** @brief Возвращает текущую точку в координатах карты. */
+    /** @brief Returns the current position in map coordinates. */
     Position GetPosition() const noexcept;
-    /** @brief Возвращает вектор движения в единицах карты в секунду. */
+    /** @brief Returns the velocity vector in map units per second. */
     geom::Vec2D GetSpeed() const noexcept;
-    /** @brief Возвращает заданный модуль скорости, в том числе в состоянии покоя. */
+    /** @brief Returns the configured speed magnitude, including when stationary. */
     double GetAbsSpeed() const noexcept;
-    /** @brief Меняет направление движения; пустая строка останавливает без смены ориентации. */
+    /** @brief Changes movement direction; an empty string stops movement without changing orientation. */
     void SetDirection(const std::string& direction);
-    /** @brief Возвращает ориентацию U, D, L или R. */
+    /** @brief Returns the orientation: U, D, L, or R. */
     const std::string& GetDirection() const noexcept;
-    /** @brief Помещает предмет в сумку при наличии места; иначе оставляет состояние неизменным. */
+    /** @brief Puts an item in the bag if space is available; otherwise leaves state unchanged. */
     void PutLootInBag(const Loot& loot);
-    /** @brief Доставляет всю сумку и увеличивает счёт атомарно.
-     * @throws std::overflow_error Итоговый счёт не помещается в int; сумка и счёт не меняются.
+    /** @brief Delivers the entire bag and increases the score atomically.
+     * @throws std::overflow_error The resulting score does not fit in int; the bag and score remain unchanged.
      */
     void ExchangeLoot();
-    /** @brief Предоставляет содержимое сумки для чтения; ссылка действует до изменения собаки. */
+    /** @brief Provides read access to the bag; the reference remains valid until the dog is modified. */
     const std::vector<Loot>& GetLootList() const noexcept;
-    /** @brief Проверяет возможность принять ещё один предмет. */
+    /** @brief Checks whether the bag can hold another item. */
     bool HasBagSpace() const noexcept;
-    /** @brief Возвращает максимальное число предметов в сумке. */
+    /** @brief Returns the maximum number of items in the bag. */
     int GetBagCapacity() const noexcept;
-    /** @brief Возвращает накопленные очки за доставленные предметы. */
+    /** @brief Returns the accumulated score for delivered items. */
     int GetScore() const noexcept;
-    /** @brief Возвращает длительность жизни в миллисекундах. */
+    /** @brief Returns the lifetime in milliseconds. */
     int GetPlayTime() const noexcept;
-    /** @brief Возвращает непрерывное время покоя в миллисекундах. */
+    /** @brief Returns the continuous idle time in milliseconds. */
     int GetInactivityTime() const noexcept;
-    /** @brief Проверяет допустимость шага до изменения игрового мира. */
+    /** @brief Validates the time step before the game world is modified. */
     void ValidateTimeDelta(const int time_delta) const;
-    /** @brief Обновляет счётчики времени; координаты изменяются сессией отдельно. */
+    /** @brief Updates time counters; the session updates coordinates separately. */
     void UpdateState(const int time_delta);
-    /** @brief Принимает U/D/L/R и пустую команду остановки. */
+    /** @brief Accepts U/D/L/R and an empty stop command. */
     static bool IsValidDirection(const std::string& direction);
 
 private:
-    /** @brief Отображаемое имя сущности. */
+    /** @brief The entity's display name. */
     std::string m_name{};
-    /** @brief Идентификатор сущности, не изменяемый после регистрации. */
+    /** @brief The entity identifier, unchanged after registration. */
     Id m_id{0};
-    /** @brief Текущая позиция в координатах карты. */
+    /** @brief Current position in map coordinates. */
     Position m_position{};
-    /** @brief Настроенный неотрицательный модуль скорости. */
+    /** @brief Configured nonnegative speed magnitude. */
     double m_abs_speed = 0.0;
-    /** @brief Текущий вектор движения; нулевой вектор означает остановку. */
+    /** @brief Current velocity vector; a zero vector means the dog is stationary. */
     geom::Vec2D m_map_speed{};
-    /** @brief Ориентация U/D/L/R, сохраняемая при остановке. */
+    /** @brief U/D/L/R orientation, preserved when stopped. */
     std::string m_dir{};
-    /** @brief Максимальное число предметов, неотрицательное. */
+    /** @brief Nonnegative maximum number of items. */
     int m_bag_capacity = 0;
-    /** @brief Предметы, которыми владеет сущность. */
+    /** @brief Items owned by the entity. */
     std::vector<Loot> m_loot_list{};
-    /** @brief Накопленные неотрицательные очки за доставку. */
+    /** @brief Accumulated nonnegative delivery score. */
     int m_score = 0;
-    /** @brief Время жизни собаки в миллисекундах. */
+    /** @brief The dog's lifetime in milliseconds. */
     int m_play_time = 0;
-    /** @brief Непрерывное время покоя в миллисекундах. */
+    /** @brief Continuous idle time in milliseconds. */
     int m_inactivity_time = 0;
 };
 } // namespace model

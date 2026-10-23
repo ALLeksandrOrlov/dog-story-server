@@ -12,176 +12,176 @@
 
 namespace model
 {
-/** @brief Прямой участок дороги с ограниченной областью движения вокруг оси. */
+/** @brief A straight road segment with a bounded movement area around its axis. */
 class Road
 {
 public:
-    /** @brief Метка конструктора горизонтального участка. */
+    /** @brief Constructor tag for a horizontal segment. */
     struct HorizontalTag
     {
     };
-    /** @brief Метка конструктора вертикального участка. */
+    /** @brief Constructor tag for a vertical segment. */
     struct VerticalTag
     {
     };
-    /** @brief Метка выбора конструктора горизонтальной дороги. */
+    /** @brief Selects the horizontal road constructor. */
     static constexpr HorizontalTag HORIZONTAL{};
-    /** @brief Метка выбора конструктора вертикальной дороги. */
+    /** @brief Selects the vertical road constructor. */
     static constexpr VerticalTag VERTICAL{};
 
-    /** @brief Создаёт горизонтальную дорогу; порядок концов произвольный. */
+    /** @brief Creates a horizontal road; endpoints may be in either order. */
     Road(HorizontalTag, const Point start, const Coord end_x) noexcept;
-    /** @brief Создаёт вертикальную дорогу; порядок концов произвольный. */
+    /** @brief Creates a vertical road; endpoints may be in either order. */
     Road(VerticalTag, const Point start, const Coord end_y) noexcept;
-    /** @brief Проверяет совпадение целочисленных координат Y концов. */
+    /** @brief Checks whether the endpoints have equal integer Y coordinates. */
     bool IsHorizontal() const noexcept;
-    /** @brief Проверяет совпадение целочисленных координат X концов. */
+    /** @brief Checks whether the endpoints have equal integer X coordinates. */
     bool IsVertical() const noexcept;
-    /** @brief Возвращает начальную точку из конфигурации. */
+    /** @brief Returns the start point from the configuration. */
     Point GetStart() const noexcept;
-    /** @brief Возвращает конечную точку из конфигурации. */
+    /** @brief Returns the end point from the configuration. */
     Point GetEnd() const noexcept;
-    /** @brief Проверяет принадлежность замкнутой области движения дороги. */
+    /** @brief Checks membership in the road's closed movement area. */
     bool IsInArea(const Position point) const;
-    /** @brief Ограничивает целевую точку ближайшей границей области движения. */
+    /** @brief Clamps the target point to the nearest movement area boundary. */
     Position GetNearestPos(const Position target_pos) const;
 
 private:
-    /** @brief Полная ширина проходимой области дороги. */
+    /** @brief Full width of the road's traversable area. */
     static constexpr double m_width = 0.8;
-    /** @brief Начало оси дороги из конфигурации. */
+    /** @brief Start of the road axis from the configuration. */
     Point m_start{};
-    /** @brief Конец оси дороги из конфигурации. */
+    /** @brief End of the road axis from the configuration. */
     Point m_end{};
-    /** @brief Минимальная координата X проходимой области. */
+    /** @brief Minimum X coordinate of the traversable area. */
     double m_start_x_range = 0.0;
-    /** @brief Максимальная координата X проходимой области. */
+    /** @brief Maximum X coordinate of the traversable area. */
     double m_end_x_range = 0.0;
-    /** @brief Минимальная координата Y проходимой области. */
+    /** @brief Minimum Y coordinate of the traversable area. */
     double m_start_y_range = 0.0;
-    /** @brief Максимальная координата Y проходимой области. */
+    /** @brief Maximum Y coordinate of the traversable area. */
     double m_end_y_range = 0.0;
 };
 
-/** @brief Неподвижное прямоугольное здание, отображаемое клиентом. */
+/** @brief A stationary rectangular building displayed by the client. */
 class Building
 {
 public:
-    /** @brief Сохраняет границы здания в координатах карты. */
+    /** @brief Stores the building bounds in map coordinates. */
     explicit Building(const Rectangle bounds) noexcept;
-    /** @brief Возвращает границы; ссылка действует до уничтожения здания. */
+    /** @brief Returns the bounds; the reference remains valid for the building's lifetime. */
     const Rectangle& GetBounds() const noexcept;
 
 private:
-    /** @brief Границы здания, используемые представлением карты. */
+    /** @brief Building bounds used by the map view. */
     Rectangle m_bounds{};
 };
 
-/** @brief Пункт доставки предметов; позиция и смещение изображения независимы. */
+/** @brief An item delivery point; position and image offset are independent. */
 class Office
 {
 public:
-    /** @brief Строго типизированный идентификатор сущности. */
+    /** @brief A strongly typed entity identifier. */
     using Id = util::Tagged<std::string, Office>;
-    /** @brief Создаёт пункт доставки с идентификатором в пределах карты. */
+    /** @brief Creates a delivery point with a map-local identifier. */
     Office(const Id& id, const Point position, const Offset offset);
-    /** @brief Возвращает идентификатор, уникальный в пределах карты. */
+    /** @brief Returns the identifier, unique within the map. */
     const Id& GetId() const noexcept;
-    /** @brief Возвращает позицию, участвующую в проверке доставки. */
+    /** @brief Returns the position used for delivery checks. */
     Point GetPosition() const noexcept;
-    /** @brief Возвращает смещение изображения, не влияющее на физику. */
+    /** @brief Returns the image offset, which does not affect physics. */
     Offset GetOffset() const noexcept;
 
 private:
-    /** @brief Идентификатор сущности, не изменяемый после регистрации. */
+    /** @brief The entity identifier, unchanged after registration. */
     Id m_id{std::string{}};
-    /** @brief Текущая позиция в координатах карты. */
+    /** @brief Current position in map coordinates. */
     Point m_position{};
-    /** @brief Смещение изображения офиса относительно точки доставки. */
+    /** @brief Offset of the office image from the delivery point. */
     Offset m_offset{};
 };
 
-/** @brief Конфигурация карты: геометрия, правила движения и каталог предметов.
- * @details После передачи в Game карта доступна только для чтения. Сессии хранят
- * невладеющую ссылку на неё; Game обеспечивает стабильность адреса.
+/** @brief Map configuration: geometry, movement rules, and item catalog.
+ * @details Once transferred to Game, the map is read-only. Sessions hold
+ * a non-owning reference to it; Game guarantees a stable address.
  */
 class Map
 {
 public:
-    /** @brief Строго типизированный идентификатор сущности. */
+    /** @brief A strongly typed entity identifier. */
     using Id = util::Tagged<std::string, Map>;
-    /** @brief Участки дорог в порядке добавления. */
+    /** @brief Road segments in insertion order. */
     using Roads = std::vector<Road>;
-    /** @brief Здания карты в порядке добавления. */
+    /** @brief Map buildings in insertion order. */
     using Buildings = std::vector<Building>;
-    /** @brief Офисы карты в порядке добавления. */
+    /** @brief Map offices in insertion order. */
     using Offices = std::vector<Office>;
 
-    /** @brief Создаёт конфигурацию; дороги добавляются до создания сессии. */
+    /** @brief Creates a configuration; roads must be added before a session is created. */
     Map(const Id& id, const std::string& name);
-    /** @brief Возвращает идентификатор, уникальный в игре. */
+    /** @brief Returns the identifier, unique within the game. */
     const Id& GetId() const noexcept;
-    /** @brief Возвращает отображаемое имя карты. */
+    /** @brief Returns the map's display name. */
     const std::string& GetName() const noexcept;
-    /** @brief Предоставляет здания без возможности изменить конфигурацию. */
+    /** @brief Provides buildings without allowing configuration changes. */
     const Buildings& GetBuildings() const noexcept;
-    /** @brief Предоставляет дороги в порядке конфигурации. */
+    /** @brief Provides roads in configuration order. */
     const Roads& GetRoads() const noexcept;
-    /** @brief Предоставляет пункты доставки в порядке конфигурации. */
+    /** @brief Provides delivery points in configuration order. */
     const Offices& GetOffices() const noexcept;
-    /** @brief Добавляет участок дороги на этапе настройки карты. */
+    /** @brief Adds a road segment during map configuration. */
     void AddRoad(const Road& road);
-    /** @brief Добавляет здание на этапе настройки карты. */
+    /** @brief Adds a building during map configuration. */
     void AddBuilding(const Building& building);
-    /** @brief Добавляет офис, сохраняя уникальность его идентификатора.
-     * @throws std::invalid_argument Идентификатор уже присутствует.
+    /** @brief Adds an office while preserving identifier uniqueness.
+     * @throws std::invalid_argument The identifier is already present.
      */
     void AddOffice(const Office& office);
-    /** @brief Добавляет или заменяет тип предмета; разреженные номера допустимы.
-     * @throws std::invalid_argument Номер типа не совпадает с параметрами или значение отрицательно.
+    /** @brief Adds or replaces an item type; sparse type numbers are allowed.
+     * @throws std::invalid_argument The type number does not match the parameters, or a value is negative.
      */
     void AddLoot(const int type, const LootProperties loot);
-    /** @brief Ищет описание типа; отсутствие выражается через std::nullopt. */
+    /** @brief Finds a type description; returns std::nullopt if absent. */
     std::optional<LootProperties> GetLoot(const int type) const noexcept;
-    /** @brief Выбирает существующий тип предмета, включая разреженные номера.
-     * @throws std::logic_error Каталог предметов пуст.
+    /** @brief Selects an existing item type, including sparse type numbers.
+     * @throws std::logic_error The item catalog is empty.
      */
     int GetRandomLootType() const;
-    /** @brief Задаёт конечную неотрицательную скорость в единицах карты в секунду. */
+    /** @brief Sets a finite, nonnegative speed in map units per second. */
     void SetSpeed(const double speed);
-    /** @brief Возвращает скорость движения, назначаемую новым собакам. */
+    /** @brief Returns the movement speed assigned to new dogs. */
     double GetSpeed() const noexcept;
-    /** @brief Задаёт неотрицательную вместимость; ноль запрещает подбор предметов. */
+    /** @brief Sets nonnegative capacity; zero prevents item collection. */
     void SetBagCapacity(const int capacity);
-    /** @brief Возвращает максимальное количество предметов в сумке. */
+    /** @brief Returns the maximum number of items in the bag. */
     int GetBagCapacity() const noexcept;
-    /** @brief Возвращает число зарегистрированных типов, а не максимальный номер. */
+    /** @brief Returns the number of registered types, not the highest type number. */
     int GetLootTypesNum() const noexcept;
-    /** @brief Выбирает целочисленную точку на оси случайной дороги.
-     * @throws std::logic_error На карте нет дорог.
+    /** @brief Selects an integer point on the axis of a random road.
+     * @throws std::logic_error The map has no roads.
      */
     Position GetRandomPoint() const;
 
 private:
-    /** @brief Связь идентификатора офиса с позицией в его массиве. */
+    /** @brief Maps an office identifier to its position in the array. */
     using OfficeIdToIndex = std::unordered_map<Office::Id, size_t, util::TaggedHasher<Office::Id>>;
-    /** @brief Идентификатор сущности, не изменяемый после регистрации. */
+    /** @brief The entity identifier, unchanged after registration. */
     Id m_id{std::string{}};
-    /** @brief Отображаемое имя сущности. */
+    /** @brief The entity's display name. */
     std::string m_name{};
-    /** @brief Геометрия проходимых участков карты. */
+    /** @brief Geometry of traversable map areas. */
     Roads m_roads{};
-    /** @brief Отображаемые здания карты. */
+    /** @brief Buildings displayed on the map. */
     Buildings m_buildings{};
-    /** @brief Индекс уникальных офисов в массиве m_offices. */
+    /** @brief Index of unique offices in the m_offices array. */
     OfficeIdToIndex m_office_id_to_index{};
-    /** @brief Точки доставки предметов. */
+    /** @brief Item delivery points. */
     Offices m_offices{};
-    /** @brief Скорость, назначаемая собакам при входе на карту. */
+    /** @brief Speed assigned to dogs when they join the map. */
     double m_dog_speed = 1.0;
-    /** @brief Максимальное число предметов, неотрицательное. */
+    /** @brief Nonnegative maximum number of items. */
     int m_bag_capacity = 3;
-    /** @brief Каталог типов предметов; номера могут быть разреженными. */
+    /** @brief Item type catalog; type numbers may be sparse. */
     std::unordered_map<int, LootProperties> m_loot_props{};
 };
 } // namespace model

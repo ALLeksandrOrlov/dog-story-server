@@ -7,42 +7,42 @@
 
 namespace domain
 {
-/** @brief Завершённая игра: независимый от активной сессии результат для хранения. */
+/** @brief A finished game result for storage, independent of the active session. */
 struct RetiredPlayer
 {
-    /** @brief Публичный идентификатор описываемой сущности. */
+    /** @brief Public identifier of the described entity. */
     std::string id{};
-    /** @brief Отображаемое имя сущности. */
+    /** @brief The entity's display name. */
     std::string name{};
-    /** @brief Неотрицательные очки за доставленные предметы. */
+    /** @brief Nonnegative score for delivered items. */
     int score = 0;
-    /** @brief Длительность завершённой игры в миллисекундах. */
+    /** @brief Duration of the finished game in milliseconds. */
     int play_time_ms = 0;
 };
 namespace detail
 {
-/** @brief Типовая метка уникального идентификатора завершённой игры. */
+/** @brief Type tag for the unique identifier of a finished game. */
 struct RetiredPlayerTag
 {
 };
 } // namespace detail
-/** @brief Уникальная идентичность завершённой игры, независимая от ID активного игрока. */
+/** @brief Unique identity of a finished game, independent of the active player ID. */
 using RetiredPlayerId = util::TaggedUUID<detail::RetiredPlayerTag>;
 
-/** @brief Порт хранения завершённых игр, независимый от конкретной базы данных.
- * @details Ошибки инфраструктуры передаются вызывающему слою; домен не знает SQL.
+/** @brief Storage port for finished games, independent of the database implementation.
+ * @details Infrastructure errors propagate to the caller; the domain has no SQL dependencies.
  */
 class RetiredPlayerRepository
 {
 public:
-    /** @brief Разрешает безопасное владение реализацией через базовый интерфейс. */
+    /** @brief Enables safe ownership through the base interface. */
     virtual ~RetiredPlayerRepository() = default;
-    /** @brief Сохраняет завершённую игру до удаления активного игрока.
-     * @details Успешный возврат означает завершение операции хранения данной реализацией.
+    /** @brief Saves the finished game before the active player is removed.
+     * @details Successful return means this implementation has completed its storage operation.
      */
     virtual void SaveRetiredPlayer(const RetiredPlayer& player) = 0;
-    /** @brief Читает страницу результатов: счёт убывает, затем время и имя возрастают.
-     * @pre offset и limit неотрицательны; вызывающий слой проверяет размер страницы.
+    /** @brief Reads a page of results ordered by descending score, then ascending time and name.
+     * @pre offset and limit are nonnegative; the caller validates the page size.
      */
     virtual std::vector<RetiredPlayer> GetRetiredPlayers(const int offset, const int limit) = 0;
 };

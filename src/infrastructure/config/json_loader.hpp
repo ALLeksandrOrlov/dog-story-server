@@ -9,37 +9,37 @@
 namespace json_loader
 {
 /**
- * @brief Загружает JSON-конфигурацию и преобразует её в валидную модель игры.
- * @details Объект хранит неизменяемую конфигурацию, включая метаданные для клиента.
- * Ошибки чтения, типов и диапазонов завершают запуск до создания HTTP-сервера.
+ * @brief Loads JSON configuration and converts it to a valid game model.
+ * @details Stores immutable configuration, including client metadata.
+ * Read, type, and range errors abort startup before the HTTP server is created.
  */
 class JsonLoader
 {
 public:
-    /** @brief Читает файл UTF-8; передаёт ошибки файловой системы и JSON вызывающему коду. */
+    /** @brief Reads a UTF-8 file; propagates filesystem and JSON errors to the caller. */
     explicit JsonLoader(const std::filesystem::path& json_path);
-    /** @brief Создаёт отдельную игру без активных сессий, проверяя все числовые настройки. */
+    /** @brief Creates a separate game without active sessions, validating all numeric settings. */
     model::Game LoadGame() const;
-    /** @brief Возвращает неизменяемую конфигурацию без копирования; ссылка живёт вместе с загрузчиком. */
+    /** @brief Returns immutable configuration without copying; the reference lasts as long as the loader. */
     const boost::json::value& GetConfiguration() const noexcept;
 
 private:
-    /** @brief Разобранный JSON; после конструктора доступен только для чтения. */
+    /** @brief Parsed JSON; read-only after construction. */
     boost::json::value m_config;
 
-    /** @brief Добавляет карты с наследованием настроек скорости и вместимости по умолчанию. */
+    /** @brief Adds maps, inheriting default speed and bag capacity settings. */
     void AddMaps(model::Game& game) const;
-    /** @brief Преобразует офисы и проверяет диапазоны их координат. */
+    /** @brief Converts offices and validates their coordinate ranges. */
     static void AddOffices(const boost::json::value& offices, model::Map& map);
-    /** @brief Преобразует здания, запрещая отрицательные размеры. */
+    /** @brief Converts buildings, rejecting negative dimensions. */
     static void AddBuildings(const boost::json::value& buildings, model::Map& map);
-    /** @brief Преобразует осевые дороги с координатами, представимыми в модели. */
+    /** @brief Converts axis-aligned roads with coordinates representable in the model. */
     static void AddRoads(const boost::json::value& roads, model::Map& map);
-    /** @brief Добавляет типы предметов с неотрицательной стоимостью. */
+    /** @brief Adds loot types with nonnegative values. */
     static void AddLoots(const boost::json::value& loots, model::Map& map);
-    /** @brief Проверяет период и вероятность генератора перед передачей домену. */
+    /** @brief Validates the generator interval and probability before passing them to the domain. */
     void AddLootGeneratorConfig(model::Game& game) const;
-    /** @brief Применяет необязательный таймаут выхода в миллисекундах. */
+    /** @brief Applies the optional retirement timeout in milliseconds. */
     void AddDogRetirementTime(model::Game& game) const;
 };
 } // namespace json_loader

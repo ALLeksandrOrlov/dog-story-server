@@ -1,7 +1,7 @@
 #pragma once
 /**
  * @file
- * @brief UUID с меткой сущности и преобразования их строкового представления.
+ * @brief Entity-tagged UUIDs and conversions to and from their string representation.
  */
 #include <string>
 #include <string_view>
@@ -13,48 +13,48 @@
 namespace util
 {
 
-/** @brief Адаптация Boost.UUID, используемая реализацией типизированных идентификаторов. */
+/** @brief Boost.UUID adapter used by the typed identifier implementation. */
 namespace detail
 {
 
-using UUIDType = boost::uuids::uuid; ///< Внутреннее двоичное представление UUID.
+using UUIDType = boost::uuids::uuid; ///< Internal binary UUID representation.
 
-/** @brief Создаёт случайный UUID средствами Boost.UUID. */
+/** @brief Creates a random UUID using Boost.UUID. */
 UUIDType NewUUID();
 
-/** @brief Представляет UUID строкой в стандартном формате с дефисами. */
+/** @brief Formats a UUID in the standard hyphenated form. */
 std::string UUIDToString(const UUIDType& uuid);
-/** @brief Разбирает стандартную запись UUID; неверный формат приводит к исключению Boost. */
+/** @brief Parses a standard UUID string; invalid input causes a Boost exception. */
 UUIDType UUIDFromString(const std::string_view text);
 
 } // namespace detail
 
-/** @brief UUID с меткой сущности; нулевое значение используется до десериализации. */
+/** @brief Entity-tagged UUID; a nil value is used before deserialization. */
 template <typename Tag> class TaggedUUID : public Tagged<detail::UUIDType, Tag>
 {
 public:
-    using Base = Tagged<detail::UUIDType, Tag>; ///< Базовое хранение значения с той же меткой.
+    using Base = Tagged<detail::UUIDType, Tag>; ///< Base value storage with the same tag.
     using Tagged<detail::UUIDType, Tag>::Tagged;
 
-    /** @brief Создаёт нулевой идентификатор. */
+    /** @brief Creates a nil identifier. */
     TaggedUUID():
             Base{detail::UUIDType{}}
     {
     }
 
-    /** @brief Возвращает новый случайный идентификатор этой сущности. */
+    /** @brief Returns a new random identifier for this entity type. */
     static TaggedUUID New()
     {
         return TaggedUUID{detail::NewUUID()};
     }
 
-    /** @brief Разбирает строковую запись идентификатора с проверкой формата UUID. */
+    /** @brief Parses an identifier string and validates the UUID format. */
     static TaggedUUID FromString(const std::string& uuid_as_text)
     {
         return TaggedUUID{detail::UUIDFromString(uuid_as_text)};
     }
 
-    /** @brief Возвращает стандартную строковую запись UUID с дефисами. */
+    /** @brief Returns the standard hyphenated UUID string. */
     std::string ToString() const
     {
         return detail::UUIDToString(**this);

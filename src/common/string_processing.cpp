@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Реализует разбиение и обрезку строк без копирования символов.
+ * @brief Splits and trims strings without copying characters.
  */
 #include "common/string_processing.hpp"
 

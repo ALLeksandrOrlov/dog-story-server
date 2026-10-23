@@ -8,39 +8,39 @@
 
 namespace model
 {
-/** @brief Тип предмета и неотрицательное число очков за его доставку. */
+/** @brief Item type and nonnegative delivery score. */
 struct LootProperties
 {
-    /** @brief Номер типа в каталоге карты. */
+    /** @brief Type number in the map catalog. */
     int type = 0;
-    /** @brief Неотрицательные очки за доставку предмета. */
+    /** @brief Nonnegative item delivery score. */
     int value = 0;
 };
 
-/** @brief Предмет с неизменяемой идентичностью, стоимостью и позицией появления. */
+/** @brief An item with immutable identity, value, and spawn position. */
 class Loot
 {
 public:
-    /** @brief Строго типизированный идентификатор сущности. */
+    /** @brief A strongly typed entity identifier. */
     using Id = util::Tagged<std::uint32_t, Loot>;
 
-    /** @brief Создаёт предмет; тип, стоимость и координаты должны быть допустимыми.
-     * @throws std::invalid_argument Отрицательный тип/стоимость либо неконечная позиция.
+    /** @brief Creates an item; type, value, and coordinates must be valid.
+     * @throws std::invalid_argument Type or value is negative, or position is nonfinite.
      */
     Loot(const Id id, const LootProperties loot_prop, const Position pos);
-    /** @brief Возвращает идентификатор, уникальный в игровой сессии. */
+    /** @brief Returns the identifier, unique within the game session. */
     const Id& GetId() const noexcept;
-    /** @brief Возвращает параметры, используемые при доставке предмета. */
+    /** @brief Returns the parameters used when delivering the item. */
     LootProperties GetProps() const noexcept;
-    /** @brief Возвращает точку появления предмета на карте. */
+    /** @brief Returns the item's spawn point on the map. */
     Position GetPos() const noexcept;
 
 private:
-    /** @brief Идентификатор сущности, не изменяемый после регистрации. */
+    /** @brief The entity identifier, unchanged after registration. */
     Id m_id{0};
-    /** @brief Тип предмета и стоимость доставки. */
+    /** @brief Item type and delivery value. */
     LootProperties m_loot_prop{};
-    /** @brief Точка появления предмета. */
+    /** @brief Item spawn point. */
     Position m_pos{};
 };
 } // namespace model

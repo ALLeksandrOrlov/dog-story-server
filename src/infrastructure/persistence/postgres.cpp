@@ -10,17 +10,17 @@ namespace postgres
 {
 namespace
 {
-/** @brief Реализует порт результатов поверх заимствованного последовательного подключения PostgreSQL. */
+/** @brief Implements the leaderboard port using a borrowed PostgreSQL connection accessed sequentially. */
 class PostgresRetiredPlayerRepository final : public domain::RetiredPlayerRepository
 {
 public:
-    /** @brief Заимствует подключение, которое должно пережить репозиторий. */
+    /** @brief Borrows a connection that must outlive the repository. */
     explicit PostgresRetiredPlayerRepository(pqxx::connection& connection):
             m_connection(connection)
     {
     }
 
-    /** @brief Сохраняет один результат атомарной SQL-транзакцией. */
+    /** @brief Saves one result in an atomic SQL transaction. */
     void SaveRetiredPlayer(const domain::RetiredPlayer& player) override
     {
         pqxx::work transaction(m_connection);
@@ -28,7 +28,7 @@ public:
         transaction.commit();
     }
 
-    /** @brief Читает страницу результатов в порядке рейтинга; отклоняет отрицательные границы. */
+    /** @brief Reads a page in leaderboard order; rejects negative pagination bounds. */
     std::vector<domain::RetiredPlayer> GetRetiredPlayers(const int offset, const int limit) override
     {
         if (offset < 0 || limit < 0)
@@ -50,16 +50,16 @@ public:
     }
 
 private:
-    /** @brief Заимствованное последовательное подключение; владелец находится в Database::Impl. */
+    /** @brief Borrowed connection accessed sequentially; owned by Database::Impl. */
     pqxx::connection& m_connection;
 };
 } // namespace
 
-/** @brief Хранит соединение раньше репозитория, обеспечивая корректный порядок уничтожения. */
+/** @brief Declares the connection before the repository to ensure correct destruction order. */
 class Database::Impl
 {
 public:
-    /** @brief Создаёт схему и подготовленный запрос перед выдачей репозитория. */
+    /** @brief Creates the schema and prepared statement before exposing the repository. */
     explicit Impl(const std::string_view connection_url):
             m_connection(std::string(connection_url)),
             m_repository(m_connection)
@@ -67,9 +67,9 @@ public:
         pqxx::work transaction(m_connection);
         transaction.exec("CREATE TABLE IF NOT EXISTS retired_players ("
                          "id UUID PRIMARY KEY, name TEXT NOT NULL, score INT NOT NULL, play_time_ms INT NOT NULL)");
-        // API не ограничивает длину имени: миграция расширяет старое поле без потери записей.
+        // The API accepts unlimited name lengths; widening the column preserves existing records.
         transaction.exec("ALTER TABLE retired_players ALTER COLUMN name TYPE TEXT");
-        // Длинное имя не помещается в B-tree; окончательная сортировка имени остаётся в ORDER BY.
+        // Long names may exceed B-tree limits; ORDER BY still applies the final name ordering.
         transaction.exec("DROP INDEX IF EXISTS idx_score_playtime_name");
         transaction.exec("CREATE INDEX IF NOT EXISTS idx_score_playtime "
                          "ON retired_players (score DESC, play_time_ms ASC)");
@@ -78,16 +78,16 @@ public:
                 "insert_player", "INSERT INTO retired_players (id, name, score, play_time_ms) VALUES ($1, $2, $3, $4)");
     }
 
-    /** @brief Возвращает адаптер с тем же сроком жизни, что и реализация Database. */
+    /** @brief Returns an adapter with the same lifetime as the Database implementation. */
     domain::RetiredPlayerRepository& GetRepository()
     {
         return m_repository;
     }
 
 private:
-    /** @brief Владеющее подключение PostgreSQL, объявленное раньше зависящего от него адаптера. */
+    /** @brief Owned PostgreSQL connection declared before its dependent adapter. */
     pqxx::connection m_connection;
-    /** @brief SQL-адаптер, использующий соединение этой реализации. */
+    /** @brief SQL adapter using this implementation's connection. */
     PostgresRetiredPlayerRepository m_repository;
 };
 

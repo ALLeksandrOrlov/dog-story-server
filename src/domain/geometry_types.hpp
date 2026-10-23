@@ -2,53 +2,53 @@
 
 namespace model
 {
-/** @brief Целочисленный размер геометрии карты. */
+/** @brief Integer dimension of map geometry. */
 using Dimension = int;
-/** @brief Целочисленная координата геометрии карты. */
+/** @brief Integer coordinate of map geometry. */
 using Coord = Dimension;
 
-/** @brief Целочисленная координата объекта в конфигурации карты. */
+/** @brief Integer object position in map configuration. */
 struct Point
 {
-    /** @brief Горизонтальная координата или компонента вектора. */
+    /** @brief Horizontal coordinate or vector component. */
     Coord x = 0;
-    /** @brief Вертикальная координата или компонента вектора. */
+    /** @brief Vertical coordinate or vector component. */
     Coord y = 0;
 };
 
-/** @brief Размер прямоугольного объекта в координатах карты. */
+/** @brief Dimensions of a rectangular object in map coordinates. */
 struct Size
 {
-    /** @brief Ширина в единицах карты. */
+    /** @brief Width in map units. */
     Dimension width = 0;
-    /** @brief Высота в единицах карты. */
+    /** @brief Height in map units. */
     Dimension height = 0;
 };
 
-/** @brief Границы здания: левый верхний угол и размеры. */
+/** @brief Building bounds: top-left corner and dimensions. */
 struct Rectangle
 {
-    /** @brief Положение в координатах карты. */
+    /** @brief Position in map coordinates. */
     Point position{};
-    /** @brief Габариты прямоугольника. */
+    /** @brief Rectangle dimensions. */
     Size size{};
 };
 
-/** @brief Смещение изображения офиса относительно его позиции. */
+/** @brief Offset of the office image from its position. */
 struct Offset
 {
-    /** @brief Горизонтальное смещение изображения. */
+    /** @brief Horizontal image offset. */
     Dimension dx = 0;
-    /** @brief Вертикальное смещение изображения. */
+    /** @brief Vertical image offset. */
     Dimension dy = 0;
 };
 
-/** @brief Непрерывная позиция движущегося объекта в координатах карты. */
+/** @brief Continuous position of a moving object in map coordinates. */
 struct Position
 {
-    /** @brief Горизонтальная координата или компонента вектора. */
+    /** @brief Horizontal coordinate or vector component. */
     double x = 0.0;
-    /** @brief Вертикальная координата или компонента вектора. */
+    /** @brief Vertical coordinate or vector component. */
     double y = 0.0;
 };
 } // namespace model

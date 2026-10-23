@@ -10,9 +10,9 @@
 namespace http_server
 {
 /**
- * @brief Выполняет context на указанном числе потоков, включая вызывающий.
- * @details При исключении останавливает context, дожидается всех потоков и повторно
- * выбрасывает первое исключение. Нулевое число потоков означает один поток.
+ * @brief Runs context on the specified number of threads, including the calling thread.
+ * @details On an exception, stops context, joins all threads, and rethrows
+ * the first exception. A zero thread count means one thread.
  */
 inline void RunWorkers(boost::asio::io_context& context, const unsigned count)
 {

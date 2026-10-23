@@ -7,33 +7,33 @@
 
 namespace bootstrap
 {
-/** @brief Проверенные настройки запуска, не содержащие ресурсов или состояния работающей игры. */
+/** @brief Validated startup options with no resources or live game state. */
 struct Args
 {
-    /** @brief Источник тиков симуляции: HTTP или внутренний таймер. */
+    /** @brief Source of simulation ticks: HTTP or an internal timer. */
     app::ApplicationMode mode = app::ApplicationMode::Manual;
-    /** @brief Период автоматического тика в миллисекундах; используется только в режиме Auto. */
+    /** @brief Automatic tick period in milliseconds; used only in Auto mode. */
     int tick_period = 0;
-    /** @brief Путь к JSON-конфигурации карт и игровых настроек. */
+    /** @brief Path to the JSON configuration of maps and game settings. */
     std::string config_file_path;
-    /** @brief Корневой каталог файлов клиентского приложения. */
+    /** @brief Root directory of client application files. */
     std::string www_root_path;
-    /** @brief Разрешает выбирать случайную точку дороги при входе игрока. */
+    /** @brief Allows random road spawn points when players join. */
     bool randomize_spawn_points = false;
-    /** @brief Путь снимка активного мира; применяется при state_file_is_set. */
+    /** @brief Path to the active world snapshot; used when state_file_is_set is true. */
     std::string state_file_path;
-    /** @brief Период сохранения по игровому времени в миллисекундах. */
+    /** @brief Snapshot interval in milliseconds of game time. */
     int save_state_period = 0;
-    /** @brief Указывает, что пользователь включил загрузку и сохранение снимка. */
+    /** @brief Whether the user enabled snapshot loading and saving. */
     bool state_file_is_set = false;
-    /** @brief Указывает, что включено периодическое сохранение снимка. */
+    /** @brief Whether periodic snapshot saving is enabled. */
     bool save_state_period_is_set = false;
 };
 
 /**
- * @brief Разбирает аргументы запуска и проверяет обязательные пути и положительные периоды.
- * @return Настройки либо nullopt после печати справки.
- * @throws std::exception Если аргументы не соответствуют поддерживаемому формату.
+ * @brief Parses startup arguments and validates required paths and positive intervals.
+ * @return Options, or nullopt after printing help.
+ * @throws std::exception Arguments do not match the supported format.
  */
 std::optional<Args> ParseCommandLine(const int argc, const char* const argv[]);
 } // namespace bootstrap

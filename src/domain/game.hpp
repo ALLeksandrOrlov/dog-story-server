@@ -8,83 +8,83 @@
 
 namespace model
 {
-/** @brief Корневой агрегат: владеет картами, сессиями и индексами поиска.
- * @details Адреса карт и сессий стабильны при добавлении. Копирование запрещено;
- * перемещение допустимо до привязки внешних обработчиков к конкретному Game.
+/** @brief Root aggregate that owns maps, sessions, and lookup indexes.
+ * @details Map and session addresses remain stable on insertion. Copying is disabled;
+ * moving is allowed before external handlers are bound to a specific Game.
  */
 class Game
 {
 public:
-    /** @brief Каталог карт со стабильными адресами элементов. */
+    /** @brief Map catalog with stable element addresses. */
     using Maps = std::deque<Map>;
-    /** @brief Сессии со стабильными адресами элементов. */
+    /** @brief Sessions with stable element addresses. */
     using GameSessions = std::deque<GameSession>;
-    /** @brief Создаёт пустую игру с базовыми настройками. */
+    /** @brief Creates an empty game with default settings. */
     Game() = default;
-    /** @brief Запрещает копирование взаимосвязанного графа объектов. */
+    /** @brief Disables copying of the interconnected object graph. */
     Game(const Game&) = delete;
-    /** @brief Запрещает копирование владельца игровых сессий. */
+    /** @brief Disables copying of the game session owner. */
     Game& operator=(const Game&) = delete;
-    /** @brief Переносит агрегат с сохранением адресов его элементов. */
+    /** @brief Moves the aggregate while preserving element addresses. */
     Game(Game&&) = default;
-    /** @brief Переносит агрегат; внешние зависимости получателя должны быть перепривязаны. */
+    /** @brief Moves the aggregate; the destination's external dependencies must be rebound. */
     Game& operator=(Game&&) = default;
-    /** @brief Добавляет конфигурацию с уникальным ID; существующие адреса не меняются. */
+    /** @brief Adds a configuration with a unique ID; existing addresses remain unchanged. */
     void AddMap(const Map& map);
-    /** @brief Возвращает каталог карт только для чтения. */
+    /** @brief Returns the map catalog for read access only. */
     const Maps& GetMaps() const noexcept;
-    /** @brief Ищет карту по ID; nullptr означает отсутствие. */
+    /** @brief Finds a map by ID; returns nullptr if absent. */
     const Map* FindMap(const Map::Id& id) const noexcept;
-    /** @brief Принимает владение сессией: одна сессия на карту, карта принадлежит этой игре. */
+    /** @brief Takes ownership of a session: one per map, with the map belonging to this game. */
     void AddSession(GameSession session);
-    /** @brief Возвращает сессии без возможности обойти поддержание внутренних индексов. */
+    /** @brief Returns sessions without allowing callers to bypass internal index maintenance. */
     const GameSessions& GetSessions() const;
-    /** @brief Находит изменяемую сессию карты; nullptr означает отсутствие активного мира. */
+    /** @brief Finds the map's mutable session; nullptr means there is no active world. */
     GameSession* FindSession(const Map::Id& id) const noexcept;
-    /** @brief Находит изменяемую сессию по её идентификатору. */
+    /** @brief Finds a mutable session by its identifier. */
     GameSession* FindSession(const GameSession::Id& id) const noexcept;
-    /** @brief Возвращает следующий монотонный ID сессии, не резервируя его. */
+    /** @brief Returns the next monotonically increasing session ID without reserving it. */
     int GetNextSessionId() const noexcept;
-    /** @brief Задаёт проверенные настройки для новых сессий; существующие не изменяются. */
+    /** @brief Sets validated options for new sessions; existing sessions remain unchanged. */
     void SetLootGeneratorConfig(const LootGeneratorConfig config);
-    /** @brief Возвращает настройки генерации для создания сессии. */
+    /** @brief Returns the generation settings used to create a session. */
     const LootGeneratorConfig& GetLootGeneratorConfig() const;
-    /** @brief Задаёт положительный срок бездействия новых сессий в миллисекундах. */
+    /** @brief Sets a positive idle timeout for new sessions, in milliseconds. */
     void SetDogRetirementTime(const int time);
-    /** @brief Возвращает срок бездействия в миллисекундах. */
+    /** @brief Returns the idle timeout in milliseconds. */
     int GetDogRetirementTime() const;
-    /** @brief Проверяет шаг во всех сессиях, затем последовательно обновляет миры.
-     * @throws InvalidTimeDelta Ни одна сессия не меняется при недопустимом шаге времени.
-     * @details Ошибки внешнего обработчика завершения игры не имеют общего отката.
+    /** @brief Validates the step in every session, then updates the worlds sequentially.
+     * @throws InvalidTimeDelta No session changes if the time step is invalid.
+     * @details Errors in the external retirement handler do not trigger a global rollback.
      */
     void UpdateState(const int time_delta);
 
 private:
-    /** @brief Хеширование типизированного идентификатора карты. */
+    /** @brief Hash function for strongly typed map identifiers. */
     using MapIdHasher = util::TaggedHasher<Map::Id>;
-    /** @brief Хеширование типизированного идентификатора сессии. */
+    /** @brief Hash function for strongly typed session identifiers. */
     using SessionIdHasher = util::TaggedHasher<GameSession::Id>;
-    /** @brief Связь идентификатора карты с индексом в каталоге. */
+    /** @brief Maps a map identifier to its catalog index. */
     using MapIdToIndex = std::unordered_map<Map::Id, size_t, MapIdHasher>;
-    /** @brief Невладеющий индекс единственной сессии каждой карты. */
+    /** @brief Non-owning index of the single session for each map. */
     using MapIdToSession = std::unordered_map<Map::Id, GameSession*, MapIdHasher>;
-    /** @brief Невладеющий индекс сессий по собственному идентификатору. */
+    /** @brief Non-owning session index keyed by session identifier. */
     using SessionIdToSession = std::unordered_map<GameSession::Id, GameSession*, SessionIdHasher>;
-    /** @brief Владеющее хранилище неизменяемых после добавления карт. */
+    /** @brief Owning storage for maps that are immutable after insertion. */
     Maps m_maps{};
-    /** @brief Индекс карты по её уникальному идентификатору. */
+    /** @brief Map index keyed by unique identifier. */
     MapIdToIndex m_map_id_to_index{};
-    /** @brief Владеющее хранилище игровых сессий. */
+    /** @brief Owning storage for game sessions. */
     GameSessions m_sessions{};
-    /** @brief Индекс активного мира каждой карты. */
+    /** @brief Index of the active world for each map. */
     MapIdToSession m_map_id_to_session{};
-    /** @brief Индекс сессий по их уникальным идентификаторам. */
+    /** @brief Session index keyed by unique identifier. */
     SessionIdToSession m_session_id_to_session{};
-    /** @brief Следующий ID сессии; существующие номера не переиспользуются. */
+    /** @brief Next session ID; existing identifiers are not reused. */
     int m_next_session_id = 0;
-    /** @brief Настройки генератора для новых сессий. */
+    /** @brief Generator settings for new sessions. */
     LootGeneratorConfig m_loot_generator_config{};
-    /** @brief Срок непрерывного бездействия до выхода, в миллисекундах. */
+    /** @brief Continuous idle timeout before retirement, in milliseconds. */
     int m_dog_retirement_time = 60000;
 };
 } // namespace model
