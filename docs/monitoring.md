@@ -105,4 +105,6 @@ Versions are pinned to official releases: [Prometheus 3.15.0](https://github.com
 [Node Exporter 1.12.1](https://github.com/prometheus/node_exporter/releases/tag/v1.12.1),
 [Python 3.13.16](https://github.com/docker-library/official-images/blob/master/library/python),
 [Prometheus client 0.26.0](https://pypi.org/project/prometheus-client/0.26.0/).
+Grafana's startup plugin downloads and updates are disabled; new installations use
+the plugins bundled with the image. Existing installed plugins remain available.
 After changing a version or configuration, rebuild the profile and check `/targets` and the preconfigured dashboard.

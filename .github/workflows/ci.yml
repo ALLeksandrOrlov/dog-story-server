@@ -15,12 +15,13 @@ jobs:
       GRAFANA_ADMIN_PASSWORD: disposable-ci-monitoring-password
       COMPOSE_PROJECT_NAME: game-server-ci
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - run: pip install clang-format==18.1.8
       - run: python3 tools/check_style.py
+      - run: python3 -m unittest discover -s tools -p 'test_check_monitoring.py'
       - run: docker compose --profile test build
       - run: docker compose up -d --wait
       - run: docker compose exec -T db createdb -U game game_test

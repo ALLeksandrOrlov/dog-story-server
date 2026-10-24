@@ -22,7 +22,8 @@ def get(url, *, authorization=None, expected=200):
         response = error
     with response:
         body = response.read()
-        assert response.status == expected, (url, response.status, expected)
+        assert response.status == expected, (
+            url, response.status, expected, body[:1000].decode("utf-8", errors="replace"))
         return json.loads(body)
 
 
@@ -39,15 +40,28 @@ def value(expression):
 
 def eventually(condition, description, timeout=60):
     deadline = time.monotonic() + timeout
+    last_error = None
     while time.monotonic() < deadline:
         try:
             if condition():
                 print("PASS: " + description)
                 return
-        except (OSError, ValueError, AssertionError):
-            pass
+        except (OSError, ValueError, AssertionError) as error:
+            last_error = error
         time.sleep(1)
-    raise AssertionError("Timed out: " + description)
+    raise AssertionError("Timed out: " + description) from last_error
+
+
+def wait_for_datasource(uid, authorization, timeout=60):
+    """Wait until Grafana's datasource plugin can reach its upstream service."""
+    url = GRAFANA + "/api/datasources/uid/" + urllib.parse.quote(uid, safe="") + "/health"
+
+    def healthy():
+        health = get(url, authorization=authorization)
+        assert health.get("status") == "OK", health
+        return True
+
+    eventually(healthy, "Grafana datasource " + uid + " is ready", timeout)
 
 
 def main():
@@ -90,8 +104,7 @@ def main():
     prometheus_sources = [source for source in sources if source["type"] == "prometheus"]
     assert prometheus_sources, "Prometheus datasource is missing"
     for source in prometheus_sources:
-        health = get(GRAFANA + "/api/datasources/uid/" + source["uid"] + "/health", authorization=authorization)
-        assert health["status"] == "OK", health
+        wait_for_datasource(source["uid"], authorization)
     print("PASS: provisioned Grafana dashboard and Prometheus datasource")
 
 
