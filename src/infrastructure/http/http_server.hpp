@@ -129,8 +129,11 @@ private:
                                  {"method", request.method_string()}},
                 "request received");
         const auto begin = std::chrono::steady_clock::now();
+        const bool header_only = request.method() == http::verb::head;
+        const bool keep_alive = request.keep_alive();
+        const unsigned version = request.version();
         m_request_handler(std::move(request),
-                [self = this->shared_from_this(), begin](auto&& response)
+                [self = this->shared_from_this(), begin, header_only, keep_alive, version](auto&& response)
                 {
                     const auto elapsed = std::chrono::steady_clock::now() - begin;
                     const auto response_time = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
@@ -139,6 +142,18 @@ private:
                     logger::PrintLog(json::object{{"response_time", std::to_string(response_time.count())},
                                              {"code", response.result_int()}, {"content_type", type}},
                             "response sent");
+                    // Connection semantics belong to the transport, independent of the selected controller.
+                    response.version(version);
+                    response.keep_alive(keep_alive);
+                    response.prepare_payload();
+                    if (header_only)
+                    {
+                        // Keep the GET representation length while transmitting no body for HEAD.
+                        http::response<http::empty_body> headers;
+                        headers.base() = std::move(response.base());
+                        self->Write(std::move(headers));
+                        return;
+                    }
                     self->Write(std::move(response));
                 });
     }

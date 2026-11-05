@@ -27,17 +27,28 @@ Token RandomToken::Generate()
     return Token(std::move(token));
 }
 
-Player::Player(const Id id, const Token& token, GameSession* session, const GameSession::DogPtr& dog):
+Player::Player(const Id id, const Token& token, GameSession* session, const GameSession::DogPtr& dog,
+        const domain::RetiredPlayerId result_id):
         m_id(id),
+        m_result_id(result_id),
         m_token(token),
         m_session(session),
         m_dog(dog)
 {
+    if (result_id == domain::RetiredPlayerId{})
+    {
+        throw std::invalid_argument("Finished-game identity must not be nil");
+    }
 }
 
 const Player::Id& Player::GetId() const noexcept
 {
     return m_id;
+}
+
+const domain::RetiredPlayerId& Player::GetResultId() const noexcept
+{
+    return m_result_id;
 }
 
 std::string Player::GetIdAsString() const
@@ -82,7 +93,7 @@ void Players::AddPlayer(const Player& player)
             std::any_of(m_players.begin(), m_players.end(),
                     [&](const auto& existing)
                     {
-                        return existing->GetId() == id ||
+                        return existing->GetId() == id || existing->GetResultId() == player.GetResultId() ||
                                 (existing->GetSession() == player.GetSession() &&
                                         existing->GetDog() == player.GetDog());
                     }))
@@ -115,6 +126,16 @@ Players::PlayerPtr Players::FindByToken(const Token& token) const
         return m_token_to_player.at(token);
     }
     return nullptr;
+}
+
+Players::PlayerPtr Players::FindByDog(const GameSession::Id session_id, const Dog::Id dog_id) const
+{
+    const auto found = std::find_if(m_players.begin(), m_players.end(),
+            [session_id, dog_id](const auto& player)
+            {
+                return player->GetSession()->GetId() == session_id && player->GetDog()->GetId() == dog_id;
+            });
+    return found == m_players.end() ? nullptr : *found;
 }
 
 std::vector<Players::PlayerPtr> Players::GetSessionPlayersList(const GameSession& session) const

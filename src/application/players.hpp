@@ -9,6 +9,7 @@
 
 #include "common/tagged.hpp"
 #include "domain/game_session.hpp"
+#include "domain/retired_player.hpp"
 
 namespace app
 {
@@ -48,10 +49,13 @@ class Player
 public:
     /** @brief Strongly typed entity identifier. */
     using Id = util::Tagged<std::uint32_t, Player>;
-    /** @brief Creates a record for subsequent validated registration in Players. */
-    Player(const Id id, const Token& token, GameSession* session, const GameSession::DogPtr& dog);
+    /** @brief Creates an association with a nonnil, stable identity for its finished-game result. */
+    Player(const Id id, const Token& token, GameSession* session, const GameSession::DogPtr& dog,
+            const domain::RetiredPlayerId result_id = domain::RetiredPlayerId::New());
     /** @brief Returns the player's identifier, unique across the game. */
     const Id& GetId() const noexcept;
+    /** @brief Returns the finished-game identity retained across retries and snapshots. */
+    const domain::RetiredPlayerId& GetResultId() const noexcept;
     /** @brief Converts the identifier to a decimal response key. */
     std::string GetIdAsString() const;
     /** @brief Returns the authorization secret, valid until registration is removed. */
@@ -66,6 +70,8 @@ public:
 private:
     /** @brief Entity identifier that does not change after registration. */
     Id m_id{0};
+    /** @brief Stable identity of the result produced when this player retires. */
+    domain::RetiredPlayerId m_result_id;
     /** @brief Access token for the associated player. */
     Token m_token{std::string{}};
     /** @brief Borrowed session pointer; Game must outlive the player. */
@@ -94,13 +100,15 @@ public:
     /** @brief Moves the registry; the destination takes over existing world associations. */
     Players& operator=(Players&&) = default;
     /** @brief Atomically adds a player to all indexes.
-     * @throws std::invalid_argument The ID, token, or dog is duplicated, or the session association is invalid.
+     * @throws std::invalid_argument An identity, token, or dog is duplicated, or the session association is invalid.
      */
     void AddPlayer(const Player& player);
     /** @brief Returns the next monotonic identifier without reserving it. */
     int GetNextPlayerId() const noexcept;
     /** @brief Finds an authorized player; nullptr indicates an unknown or revoked token. */
     PlayerPtr FindByToken(const Token& token) const;
+    /** @brief Finds the registration controlling a dog within a session, or returns nullptr. */
+    PlayerPtr FindByDog(const GameSession::Id session_id, const Dog::Id dog_id) const;
     /** @brief Builds a player list for the specified session only. */
     std::vector<PlayerPtr> GetSessionPlayersList(const GameSession& session) const;
     /** @brief Exposes the registry for snapshots without allowing structural changes. */

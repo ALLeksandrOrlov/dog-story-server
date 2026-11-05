@@ -20,7 +20,7 @@ public:
     {
     }
 
-    /** @brief Saves one result in an atomic SQL transaction. */
+    /** @brief Saves a result atomically; repeated identities retain the first committed values. */
     void SaveRetiredPlayer(const domain::RetiredPlayer& player) override
     {
         pqxx::work transaction(m_connection);
@@ -74,8 +74,9 @@ public:
         transaction.exec("CREATE INDEX IF NOT EXISTS idx_score_playtime "
                          "ON retired_players (score DESC, play_time_ms ASC)");
         transaction.commit();
-        m_connection.prepare(
-                "insert_player", "INSERT INTO retired_players (id, name, score, play_time_ms) VALUES ($1, $2, $3, $4)");
+        m_connection.prepare("insert_player",
+                "INSERT INTO retired_players (id, name, score, play_time_ms) VALUES ($1, $2, $3, $4) "
+                "ON CONFLICT (id) DO NOTHING");
     }
 
     /** @brief Returns an adapter with the same lifetime as the Database implementation. */

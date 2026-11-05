@@ -41,6 +41,7 @@ services:
       - sh
       - -c
       - >-
+        build/build/Release/postgres_idempotency_tests &&
         python3 tools/run_http_integration.py build/build/Release/game_server &&
         python3 tests/api_edge_check.py build/build/Release/game_server &&
         python3 tests/runtime_failure_check.py build/build/Release/game_server &&

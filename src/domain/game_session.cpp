@@ -104,6 +104,16 @@ void GameSession::AddDog(const Dog& dog)
     {
         throw std::invalid_argument("Dog id is outside the supported range");
     }
+    int next_loot_id = m_next_loot_id;
+    for(const auto& loot : dog.GetLootList())
+    {
+        const auto loot_id = *loot.GetId();
+        if (loot_id >= static_cast<unsigned>(std::numeric_limits<int>::max()))
+        {
+            throw std::invalid_argument("Loot id is outside the supported range");
+        }
+        next_loot_id = std::max(next_loot_id, static_cast<int>(loot_id) + 1);
+    }
     auto next_dog = std::make_shared<Dog>(dog);
     m_dog_id_to_dog.emplace(id, next_dog);
     try
@@ -116,6 +126,7 @@ void GameSession::AddDog(const Dog& dog)
         throw;
     }
     m_next_dog_id = std::max(m_next_dog_id, static_cast<int>(*id) + 1);
+    m_next_loot_id = next_loot_id;
 }
 
 const GameSession::Dogs& GameSession::GetDogs() const
@@ -191,36 +202,36 @@ void GameSession::UpdateState(const int time_delta)
     UpdateLoot(time_delta);
 }
 
-std::pair<double, Position> GameSession::GetCloserToPoint(const Position current_pos, const Position target_pos) const
+Position GameSession::FindReachablePosition(const Position current_pos, const Position target_pos) const
 {
-    const Map::Roads& roads = m_map->GetRoads();
-    std::vector<std::pair<double, Position>> distances_to_target;
-    for(const auto& road : roads)
+    Position reachable = current_pos;
+    double reached_distance = 0.0;
+    bool advanced = false;
+    do
     {
-        if (road.IsInArea(current_pos))
+        advanced = false;
+        bool on_road = false;
+        for(const auto& road : m_map->GetRoads())
         {
-            Position next_point = road.GetNearestPos(target_pos);
-            double distance = std::hypot(next_point.x - target_pos.x, next_point.y - target_pos.y);
-            const bool is_target_reached = geom::AreNear(distance, 0.0);
-            if (is_target_reached)
+            if (road.IsInArea(reachable))
             {
-                distances_to_target.clear();
-                distances_to_target.push_back({distance, next_point});
-                break;
+                on_road = true;
+                const Position candidate = road.GetNearestPos(target_pos);
+                const double distance = std::hypot(candidate.x - current_pos.x, candidate.y - current_pos.y);
+                if (distance > reached_distance)
+                {
+                    reachable = candidate;
+                    reached_distance = distance;
+                    advanced = true;
+                }
             }
-            distances_to_target.push_back({distance, next_point});
         }
-    }
-
-    if (distances_to_target.empty())
-    {
-        throw std::logic_error("Player position is outside map roads");
-    }
-    return *std::min_element(distances_to_target.begin(), distances_to_target.end(),
-            [](const std::pair<double, Position>& a, const std::pair<double, Position>& b)
-            {
-                return a.first < b.first;
-            });
+        if (!on_road)
+        {
+            throw std::logic_error("Player position is outside map roads");
+        }
+    } while(advanced);
+    return reachable;
 }
 
 void GameSession::RemoveDogAt(const size_t index)
@@ -291,28 +302,29 @@ void GameSession::UpdateCollisions(const int time_delta)
     using namespace std::literals;
 
     std::vector<Gatherer> gatherers;
+    std::vector<double> movement_fractions;
+    movement_fractions.reserve(m_dogs.size());
     for(auto& dog : m_dogs)
     {
         Position pos = dog->GetPosition();
         geom::Vec2D speed = dog->GetSpeed();
         constexpr double milliseconds_per_second = 1000.0;
-        Position target = {(pos.x + speed.x * (time_delta / milliseconds_per_second)),
-                (pos.y + speed.y * (time_delta / milliseconds_per_second))};
+        const double elapsed_seconds = time_delta / milliseconds_per_second;
+        const Position target = {pos.x + speed.x * elapsed_seconds, pos.y + speed.y * elapsed_seconds};
+        const Position reachable = FindReachablePosition(pos, target);
 
-        auto distance_pos = GetCloserToPoint(pos, target);
-        if (!geom::AreNear(distance_pos.first, 0.0))
+        double movement_fraction = 1.0;
+        if (!geom::AreNear(std::hypot(reachable.x - target.x, reachable.y - target.y), 0.0))
         {
-            distance_pos = GetCloserToPoint(distance_pos.second, target);
-        }
-
-        if (!geom::AreNear(distance_pos.first, 0.0))
-        {
+            const double distance = std::hypot(reachable.x - pos.x, reachable.y - pos.y);
+            movement_fraction = std::clamp(distance / std::hypot(speed.x, speed.y) / elapsed_seconds, 0.0, 1.0);
             dog->SetDirection(""s);
         }
-        dog->SetPosition(distance_pos.second);
+        dog->SetPosition(reachable);
 
         constexpr double dog_width = 0.6;
-        gatherers.push_back({{pos.x, pos.y}, {distance_pos.second.x, distance_pos.second.y}, dog_width});
+        gatherers.push_back({{pos.x, pos.y}, {reachable.x, reachable.y}, dog_width});
+        movement_fractions.push_back(movement_fraction);
     }
 
     std::vector<Item> items;
@@ -330,7 +342,21 @@ void GameSession::UpdateCollisions(const int time_delta)
 
     VectorItemGathererProvider provider(std::move(items), std::move(gatherers));
     std::vector<GatheringEvent> events(FindGatherEvents(provider));
+    // A clipped path lasts less than the full tick; compare events using elapsed game time.
+    for(auto& event : events)
+    {
+        event.time *= movement_fractions[event.gatherer_id];
+    }
+    std::stable_sort(events.begin(), events.end(),
+            [](const GatheringEvent& left, const GatheringEvent& right)
+            {
+                return left.time < right.time;
+            });
+    ApplyGatheringEvents(events);
+}
 
+void GameSession::ApplyGatheringEvents(const std::vector<GatheringEvent>& events)
+{
     // Allocate bookkeeping storage before changing bags so recording a successful pickup cannot throw.
     std::vector<bool> collected(m_loot_list.size(), false);
     try

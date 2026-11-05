@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/version.hpp>
 
 #include "application/players.hpp"
 #include "domain/game.hpp"
@@ -20,7 +21,8 @@ public:
             m_id(player.GetId()),
             m_token(player.GetToken()),
             m_map_id(player.GetSession()->GetMap()->GetId()),
-            m_dog_id(player.GetDog()->GetId())
+            m_dog_id(player.GetDog()->GetId()),
+            m_result_id(player.GetResultId().ToString())
     {
     }
 
@@ -40,11 +42,11 @@ public:
         {
             throw std::runtime_error("Snapshot player references an unknown dog");
         }
-        return {m_id, m_token, session, std::move(dog)};
+        return {m_id, m_token, session, std::move(dog), domain::RetiredPlayerId::FromString(m_result_id)};
     }
 
     /** @brief Serializes fields in archive order; the name is required by Boost.Serialization. */
-    template <typename Archive> void serialize(Archive& ar, [[maybe_unused]] const unsigned version)
+    template <typename Archive> void serialize(Archive& ar, const unsigned version)
     {
         /** @brief Player identifier, unique within the game. */
         ar&* m_id;
@@ -54,6 +56,14 @@ public:
         ar&* m_map_id;
         /** @brief Dog identifier within the restored session. */
         ar&* m_dog_id;
+        if (version > 0)
+        {
+            ar & m_result_id;
+        }
+        else if constexpr(Archive::is_loading::value)
+        {
+            m_result_id = domain::RetiredPlayerId::New().ToString();
+        }
     }
 
 private:
@@ -65,6 +75,8 @@ private:
     model::Map::Id m_map_id{""};
     /** @brief Dog identifier within the restored session. */
     model::Dog::Id m_dog_id{0};
+    /** @brief Finished-game UUID retained even when an active snapshot is replayed. */
+    std::string m_result_id;
 };
 
 /** @brief Player registry snapshot restored after the game world. */
@@ -108,3 +120,5 @@ private:
 };
 
 } // namespace serialization
+
+BOOST_CLASS_VERSION(::serialization::PlayerRepr, 1)

@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "domain/collision_detector.hpp"
 #include "domain/dog.hpp"
 #include "domain/loot_generator.hpp"
 #include "domain/map.hpp"
@@ -54,7 +55,7 @@ public:
     GameSession& operator=(GameSession&&) = default;
     /** @brief Returns the session's identifier within the game. */
     const Id& GetId() const noexcept;
-    /** @brief Registers a dog; duplicates or allocation failures leave state unchanged. */
+    /** @brief Registers a dog and reserves its bag item IDs; failures leave state unchanged. */
     void AddDog(const Dog& dog);
     /** @brief Unregisters a dog without recording a result, for example after a failed join.
      * @details Identifiers are not reused; an absent ID is ignored.
@@ -110,19 +111,21 @@ private:
     /** @brief Saves the result and invalidates the token before removing the dog from the session. */
     std::function<void(GameSession::Id, Dog::Id)> m_on_dog_retirement{};
 
-    /** @brief Finds a reachable point nearest the target on a road containing the initial position. */
-    std::pair<double, Position> GetCloserToPoint(const Position current_pos, const Position target_pos) const;
+    /** @brief Follows connected road areas toward a target along the dog's movement axis. */
+    Position FindReachablePosition(const Position current_pos, const Position target_pos) const;
     /** @brief Removes a dog from both indexes using a validated vector index. */
     void RemoveDogAt(const size_t index);
     /** @brief Removes collected items without throwing, preserving remaining indexes until removal. */
     void RemoveCollectedLoot(const std::vector<bool>& collected) noexcept;
     /** @brief Updates timers and retires stationary dogs. */
     void UpdateDogsState(const int time_delta);
-    /** @brief Moves dogs, then processes pickups and deliveries in collision order.
+    /** @brief Moves dogs, then processes pickups and deliveries by their elapsed time within the tick.
      * @details Preserves completed events on error: a collected item is already removed from the map.
      * Movement and successful deliveries are not rolled back; a failed delivery preserves the bag and score.
      */
     void UpdateCollisions(const int time_delta);
+    /** @brief Applies ordered pickups and deliveries, retaining completed events if a later event fails. */
+    void ApplyGatheringEvents(const std::vector<collision_detector::GatheringEvent>& events);
     /** @brief Preserves generator state between ticks and adds new items. */
     void UpdateLoot(const int time_delta);
 };

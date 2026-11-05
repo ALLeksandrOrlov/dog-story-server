@@ -93,6 +93,22 @@ if(BUILD_TESTING)
     target_compile_definitions(infrastructure_review_tests PRIVATE TEST_CONFIG="${PROJECT_SOURCE_DIR}/tests/fixtures/contract.json")
     catch_discover_tests(infrastructure_review_tests)
 
+    add_executable(snapshot_identity_tests tests/snapshot_identity_tests.cpp)
+    target_link_libraries(snapshot_identity_tests PRIVATE game_application game_persistence Catch2::Catch2WithMain)
+    catch_discover_tests(snapshot_identity_tests)
+
+    # Run explicitly against the isolated database selected by GAME_TEST_DB_URL.
+    add_executable(postgres_idempotency_tests tests/postgres_idempotency_tests.cpp)
+    target_link_libraries(postgres_idempotency_tests PRIVATE game_postgres Catch2::Catch2WithMain)
+
+    add_executable(movement_tests tests/movement_tests.cpp)
+    target_link_libraries(movement_tests PRIVATE game_domain Catch2::Catch2WithMain)
+    catch_discover_tests(movement_tests)
+
+    add_executable(mime_type_tests tests/mime_type_tests.cpp)
+    target_link_libraries(mime_type_tests PRIVATE game_controller Catch2::Catch2WithMain)
+    catch_discover_tests(mime_type_tests)
+
     add_test(NAME original_client_unchanged COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/verify_original_client.py)
     add_test(NAME architecture_boundaries COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/check_architecture.py)
 endif()

@@ -48,6 +48,7 @@ which is why they use a dedicated test database.
 
 | Scenario | Coverage |
 | --- | --- |
+| `postgres_idempotency_tests` | Repeated result saves retain a single row and the first committed values |
 | `tools/run_http_integration.py` | Movement, item pickup and delivery, player retirement, record persistence, automatic time, snapshots, and restart |
 | `tests/api_edge_check.py` | Invalid requests, boundary values, concurrent joins, and ticks |
 | `tests/runtime_failure_check.py` | Process exit after a background snapshot write fails |
@@ -63,10 +64,12 @@ Check a running test stack:
 ```sh
 python3 tests/docker_smoke.py
 python3 tests/client_resource_check.py
+python3 tests/http_transport_check.py
 ```
 
 The first scenario creates players and restarts the game container twice.
 It requires a separate deployment with its own volumes and database.
+The transport check verifies HEAD framing, persistent connections, and HTTP version handling.
 
 ## Integrity and code quality
 

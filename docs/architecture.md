@@ -72,6 +72,10 @@ this does not imply rollback of the entire tick.
 ## State persistence
 
 Completed game results are written to PostgreSQL through a repository.
+Each player has a separate finished-game UUID, allocated on registration and
+retained in active snapshots. Saving that UUID more than once retains the first
+committed result, including when a commit acknowledgement is lost or an active
+snapshot is replayed after a crash. Authorization tokens are not used as result identities.
 Active sessions and authorization are saved separately: `StateStore` serializes
 a snapshot to a temporary file, then renames it to replace the destination file.
 The save interval is measured in game time; a write occurs when `elapsed > period`
@@ -101,9 +105,10 @@ preconditions, and significant method errors.
   arbitrary concurrent calls.
 - PostgreSQL calls are synchronous. A slow database delays API requests and game ticks.
 - The active world, file snapshot, and results table do not share a transaction.
-  An error during a tick does not roll back the entire world. If the outcome of COMMIT
-  is uncertain, retrying the save is not guaranteed to be idempotent and may create
-  a duplicate result.
+  An error during a tick does not roll back the entire world. Recovery can temporarily
+  restore a player whose result is already saved; retiring that player again does not
+  duplicate or replace the committed result. Snapshots without result identifiers
+  receive new identifiers on loading; these become durable at the next successful save.
 - Snapshots do not store velocity or time counters. After recovery, a player remains
   stationary until a new command arrives, and time counters start again. Atomic file
   replacement does not guarantee durability in a power failure.

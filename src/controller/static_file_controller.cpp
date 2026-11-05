@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <utility>
 
 #include "common/string_processing.hpp"
 
@@ -12,6 +13,29 @@ namespace
 {
 /** @brief HTTP/1.1 version number as represented by Boost.Beast. */
 constexpr unsigned http_version = 11;
+
+/** @brief Supported file extensions, including aliases, and their response MIME types. */
+constexpr std::pair<std::string_view, std::string_view> content_types[] = {
+        {".htm", ContentType::text_html},
+        {".html", ContentType::text_html},
+        {".css", ContentType::text_css},
+        {".txt", ContentType::text_plain},
+        {".js", ContentType::text_javascript},
+        {".json", ContentType::app_json},
+        {".xml", ContentType::app_xml},
+        {".png", ContentType::img_png},
+        {".jpg", ContentType::img_jpeg},
+        {".jpe", ContentType::img_jpeg},
+        {".jpeg", ContentType::img_jpeg},
+        {".gif", ContentType::img_gif},
+        {".bmp", ContentType::img_bmp},
+        {".ico", ContentType::img_ico},
+        {".tiff", ContentType::img_tiff},
+        {".tif", ContentType::img_tiff},
+        {".svg", ContentType::img_svg},
+        {".svgz", ContentType::img_svg},
+        {".mp3", ContentType::audio_mpeg},
+};
 } // namespace
 
 FileRequestResult StaticFileController::Handle(const StringRequest& /*request*/, const std::string_view uri) const
@@ -105,74 +129,12 @@ std::string_view StaticFileController::GetFileContentType(const fs::path& file_p
                 return std::tolower(c);
             });
 
-    if ((ext == ".htm"sv) || (ext == ".html"sv))
+    for(const auto& [extension, content_type] : content_types)
     {
-        return ContentType::text_html;
-    }
-
-    if (ext == ".css"sv)
-    {
-        return ContentType::text_css;
-    }
-
-    if (ext == ".txt"sv)
-    {
-        return ContentType::text_plain;
-    }
-
-    if (ext == ".js"sv)
-    {
-        return ContentType::text_javascript;
-    }
-
-    if (ext == ".json"sv)
-    {
-        return ContentType::app_json;
-    }
-
-    if (ext == ".xml"sv)
-    {
-        return ContentType::app_xml;
-    }
-
-    if (ext == ".png"sv)
-    {
-        return ContentType::img_png;
-    }
-
-    if ((ext == ".jpg"sv) || (ext == ".jpe"sv) || (ext == ".jpeg"sv))
-    {
-        return ContentType::img_jpeg;
-    }
-
-    if (ext == ".gif"sv)
-    {
-        return ContentType::img_gif;
-    }
-
-    if (ext == ".bmp"sv)
-    {
-        return ContentType::img_bmp;
-    }
-
-    if (ext == ".ico"sv)
-    {
-        return ContentType::img_ico;
-    }
-
-    if ((ext == ".tiff"sv) || (ext == ".tif"sv))
-    {
-        return ContentType::img_tiff;
-    }
-
-    if ((ext == ".svg"sv) || (ext == ".svgz"sv))
-    {
-        return ContentType::img_svg;
-    }
-
-    if (ext == ".mp3"sv)
-    {
-        return ContentType::audio_mpeg;
+        if (ext == extension)
+        {
+            return content_type;
+        }
     }
 
     return ContentType::app_octet_stream;

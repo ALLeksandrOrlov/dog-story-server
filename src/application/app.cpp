@@ -197,12 +197,16 @@ bool Application::IsValidToken(const Token& token)
 void Application::BindSession(GameSession& session)
 {
     session.SetDogRetirementHandler(
-            [&game = m_game, &players = m_players, &repository = m_players_repo](
-                    GameSession::Id session_id, Dog::Id dog_id)
+            [&players = m_players, &repository = m_players_repo](GameSession::Id session_id, Dog::Id dog_id)
             {
-                auto dog = game.FindSession(session_id)->FindDog(dog_id);
+                const auto player = players.FindByDog(session_id, dog_id);
+                if (!player)
+                {
+                    throw std::logic_error("Retiring dog must have a registered player");
+                }
+                const auto dog = player->GetDog();
                 domain::RetiredPlayer record{
-                        domain::RetiredPlayerId::New().ToString(), dog->GetName(), dog->GetScore(), dog->GetPlayTime()};
+                        player->GetResultId().ToString(), dog->GetName(), dog->GetScore(), dog->GetPlayTime()};
                 repository.SaveRetiredPlayer(record);
                 players.RemovePlayer(session_id, dog_id);
             });

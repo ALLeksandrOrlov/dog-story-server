@@ -39,6 +39,7 @@ public:
     virtual ~RetiredPlayerRepository() = default;
     /** @brief Saves the finished game before the active player is removed.
      * @details Successful return means this implementation has completed its storage operation.
+     * Repeated saves with the same result identity retain the first committed result.
      */
     virtual void SaveRetiredPlayer(const RetiredPlayer& player) = 0;
     /** @brief Reads a page of results ordered by descending score, then ascending time and name.
